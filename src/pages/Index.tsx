@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Map, X, AlertCircle, RefreshCcw } from 'lucide-react';
+import { Map, X, AlertCircle, RefreshCcw, Filter } from 'lucide-react';
 import Header from '../components/Header';
 import LoadingSpinner from '../components/LoadingSpinner';
 import FilterBar from '../components/FilterBar';
@@ -30,16 +30,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header locationName={location ? 'your area' : undefined} />
+      <Header locationName={location ? 'nearby' : undefined} />
       
-      <main className="flex-1 container mx-auto py-4 px-4 md:px-6">
+      <main className="flex-1 container mx-auto py-4 px-3 pb-16">
         {/* Location Error */}
         {locationError && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Location Error</AlertTitle>
+            <AlertTitle>Location Access Needed</AlertTitle>
             <AlertDescription>
-              {locationError}. Please allow location access to use this app.
+              {locationError}. Please allow location access to find restaurants near you.
               <Button 
                 variant="outline" 
                 onClick={handleRetryLocation} 
@@ -57,16 +57,16 @@ const Index = () => {
         {loadingLocation && !locationError && (
           <div className="text-center py-12">
             <LoadingSpinner size="large" />
-            <p className="text-lg mt-4">Getting your location...</p>
+            <p className="text-lg mt-4">Finding your location...</p>
             <p className="text-sm text-muted-foreground mt-1">Please allow location access if prompted</p>
           </div>
         )}
         
         {/* Filter Controls */}
         {location && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-display font-semibold">Nearby Restaurants</h2>
+          <div className="mb-4 sticky top-16 z-[5] bg-gray-50 pt-1 pb-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Nearby Spots</h2>
               <Button 
                 variant="outline" 
                 onClick={() => setShowFilters(!showFilters)}
@@ -75,11 +75,11 @@ const Index = () => {
               >
                 {showFilters ? (
                   <>
-                    <X className="w-4 h-4" /> Hide Filters
+                    <X className="w-4 h-4" /> Hide
                   </>
                 ) : (
                   <>
-                    <Map className="w-4 h-4" /> Show Filters
+                    <Filter className="w-4 h-4" /> Filter
                   </>
                 )}
               </Button>
@@ -89,7 +89,7 @@ const Index = () => {
               <FilterBar 
                 filters={filters} 
                 updateFilters={updateFilters} 
-                className="mb-4 rounded-lg shadow-sm"
+                className="mb-3 rounded-lg shadow-sm"
               />
             )}
           </div>
@@ -144,19 +144,13 @@ const Index = () => {
         
         {/* Load More */}
         {hasMore && filteredRestaurants.length > 0 && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-8 pb-8">
             <Button onClick={loadMore} variant="outline">
-              Load More Restaurants
+              Load More
             </Button>
           </div>
         )}
       </main>
-      
-      <footer className="bg-food-dark text-white py-4 text-center text-sm">
-        <p>
-          MunchMap Helper | Powered by Google Maps
-        </p>
-      </footer>
     </div>
   );
 };
