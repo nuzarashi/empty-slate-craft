@@ -22,7 +22,7 @@ import { Settings } from 'lucide-react';
 
 export interface DiningPreferences {
   budget: number[];
-  maxDistance: number;
+  maxDistance: number[];
   dietary: {
     vegan: boolean;
     vegetarian: boolean;
@@ -80,7 +80,10 @@ const PreferencesMenu: React.FC<PreferencesMenuProps> = ({
               name="budget"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Budget (${field.value[0]})</FormLabel>
+                  <FormLabel className="flex justify-between">
+                    <span>Budget Range</span>
+                    <span>${field.value[0]} - ${field.value[1]}</span>
+                  </FormLabel>
                   <FormControl>
                     <Slider 
                       min={1} 
@@ -100,14 +103,17 @@ const PreferencesMenu: React.FC<PreferencesMenuProps> = ({
               name="maxDistance"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max Walking Distance ({field.value} min)</FormLabel>
+                  <FormLabel className="flex justify-between">
+                    <span>Max Walking Distance</span>
+                    <span>{field.value[0]} min</span>
+                  </FormLabel>
                   <FormControl>
                     <Slider 
                       min={5} 
                       max={30} 
                       step={5} 
-                      value={[field.value]} 
-                      onValueChange={(val) => field.onChange(val[0])} 
+                      value={field.value} 
+                      onValueChange={field.onChange} 
                       className="py-4"
                     />
                   </FormControl>

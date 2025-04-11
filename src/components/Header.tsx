@@ -10,8 +10,8 @@ interface HeaderProps {
 }
 
 const defaultPreferences: DiningPreferences = {
-  budget: [2],
-  maxDistance: 15,
+  budget: [1, 4], // Min and max budget
+  maxDistance: [15], // Max distance in minutes
   dietary: {
     vegan: false,
     vegetarian: false,
