@@ -3,12 +3,6 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { Location } from '../types';
 
-// Fixed fallback coordinates for Iwatsuki, Saitama City, Japan
-const IWATSUKI_COORDINATES: Location = {
-  lat: 35.9506, 
-  lng: 139.6917
-};
-
 const useLocation = () => {
   const [location, setLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -16,10 +10,10 @@ const useLocation = () => {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      console.log("Geolocation not supported, using fallback location");
-      setLocation(IWATSUKI_COORDINATES);
+      console.log("Geolocation not supported");
+      setError('Geolocation is not supported by your browser');
       setLoading(false);
-      toast.info('Using Iwatsuki, Saitama City as your location');
+      toast.error('Geolocation is not supported by your browser');
       return;
     }
 
@@ -32,11 +26,10 @@ const useLocation = () => {
     };
 
     const error = () => {
-      console.log("Geolocation permission denied, using fallback location");
-      setError('Using default location for Iwatsuki, Saitama City');
-      setLocation(IWATSUKI_COORDINATES);
+      console.log("Geolocation permission denied");
+      setError('Unable to retrieve your location. Please allow location access and refresh.');
       setLoading(false);
-      toast.info('Using Iwatsuki, Saitama City as your location');
+      toast.error('Unable to retrieve your location');
     };
 
     navigator.geolocation.getCurrentPosition(success, error, {
@@ -45,15 +38,15 @@ const useLocation = () => {
       maximumAge: 0
     });
 
-    // Set a backup timeout to use fallback location if geolocation takes too long
+    // Set a backup timeout in case geolocation takes too long
     const timeoutId = setTimeout(() => {
       if (loading) {
-        console.log("Geolocation timeout, using fallback location");
-        setLocation(IWATSUKI_COORDINATES);
+        console.log("Geolocation timeout");
+        setError('Location request timed out. Please refresh and try again.');
         setLoading(false);
-        toast.info('Using Iwatsuki, Saitama City as your location');
+        toast.error('Location request timed out');
       }
-    }, 5000);
+    }, 15000);
 
     return () => clearTimeout(timeoutId);
   }, [loading]);

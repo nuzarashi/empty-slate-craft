@@ -2,7 +2,6 @@
 import { toast } from 'sonner';
 import type { Location, Restaurant } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
-import { demoRestaurants } from '../data/demoRestaurants';
 
 // Fetch nearby restaurants
 export const fetchNearbyRestaurants = async (
@@ -10,18 +9,6 @@ export const fetchNearbyRestaurants = async (
   pageToken?: string
 ): Promise<{ restaurants: Restaurant[], nextPageToken: string | null }> => {
   try {
-    // For development, we'll use the dummy data 
-    // Simulating API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // For demonstration, we're using dummy data instead of actual API calls
-    return {
-      restaurants: demoRestaurants,
-      nextPageToken: null // No more pages in our demo
-    };
-    
-    // The Supabase Edge Function implementation would look like this:
-    /*
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
@@ -57,7 +44,6 @@ export const fetchNearbyRestaurants = async (
       restaurants,
       nextPageToken: data.next_page_token || null
     };
-    */
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurants';
     throw new Error(errorMessage);
@@ -67,13 +53,6 @@ export const fetchNearbyRestaurants = async (
 // Fetch restaurant details
 export const fetchRestaurantDetails = async (restaurantId: string): Promise<Restaurant | null> => {
   try {
-    // In a real implementation, this would call the Supabase Edge Function
-    // For demo, we'll return the matching restaurant from our dummy data
-    
-    return demoRestaurants.find(r => r.id === restaurantId) || null;
-    
-    // The Supabase Edge Function implementation would look like this:
-    /*
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
@@ -98,7 +77,6 @@ export const fetchRestaurantDetails = async (restaurantId: string): Promise<Rest
     }
     
     return data.result;
-    */
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurant details';
     toast.error(errorMessage);
@@ -112,13 +90,6 @@ export const calculateDistances = async (
   places: Restaurant[]
 ): Promise<Restaurant[]> => {
   try {
-    // In a real implementation, this would be a call to the Supabase Edge Function
-    // For this demo, we're already using distances in our dummy data
-    
-    return places;
-    
-    // The Supabase Edge Function implementation would look like this:
-    /*
     const origins = `${userLocation.lat},${userLocation.lng}`;
     const destinations = places.map(place => `${place.geometry.location.lat},${place.geometry.location.lng}`);
     
@@ -159,7 +130,6 @@ export const calculateDistances = async (
       
       return place;
     });
-    */
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to calculate distances';
     console.error(errorMessage);
