@@ -3,6 +3,12 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { Location } from '../types';
 
+// Fixed fallback coordinates for Iwatsuki, Saitama City, Japan
+const IWATSUKI_COORDINATES: Location = {
+  lat: 35.9506, 
+  lng: 139.6917
+};
+
 const useLocation = () => {
   const [location, setLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -10,9 +16,10 @@ const useLocation = () => {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
+      console.log("Geolocation not supported, using fallback location");
+      setLocation(IWATSUKI_COORDINATES);
       setLoading(false);
-      toast.error('Geolocation is not supported by your browser');
+      toast.info('Using Iwatsuki, Saitama City as your location');
       return;
     }
 
@@ -25,9 +32,11 @@ const useLocation = () => {
     };
 
     const error = () => {
-      setError('Unable to retrieve your location');
+      console.log("Geolocation permission denied, using fallback location");
+      setError('Using default location for Iwatsuki, Saitama City');
+      setLocation(IWATSUKI_COORDINATES);
       setLoading(false);
-      toast.error('Unable to retrieve your location. Please allow location access.');
+      toast.info('Using Iwatsuki, Saitama City as your location');
     };
 
     navigator.geolocation.getCurrentPosition(success, error, {
@@ -35,7 +44,19 @@ const useLocation = () => {
       timeout: 10000,
       maximumAge: 0
     });
-  }, []);
+
+    // Set a backup timeout to use fallback location if geolocation takes too long
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.log("Geolocation timeout, using fallback location");
+        setLocation(IWATSUKI_COORDINATES);
+        setLoading(false);
+        toast.info('Using Iwatsuki, Saitama City as your location');
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
 
   return { location, loading, error };
 };

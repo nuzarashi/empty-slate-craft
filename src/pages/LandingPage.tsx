@@ -60,6 +60,10 @@ const LandingPage = () => {
     // This data would be passed to the restaurants page
   };
 
+  // Display budget as $ symbols
+  const minBudgetDisplay = Array(watchBudget[0]).fill('$').join('');
+  const maxBudgetDisplay = Array(watchBudget[1]).fill('$').join('');
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-food-cream to-white">
       <Header />
@@ -80,7 +84,7 @@ const LandingPage = () => {
                   <FormItem>
                     <FormLabel className="flex justify-between">
                       <span>Budget Range</span>
-                      <span className="font-medium">${field.value[0]} - ${field.value[1]}</span>
+                      <span className="font-medium">{minBudgetDisplay} - {maxBudgetDisplay}</span>
                     </FormLabel>
                     <FormControl>
                       <Slider 

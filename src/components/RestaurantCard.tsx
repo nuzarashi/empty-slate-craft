@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, MapPin, Star, Heart } from 'lucide-react';
+import { Clock, MapPin, Star, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Restaurant } from '../types';
@@ -9,10 +9,9 @@ import { formatDistance, formatDuration } from '@/utils/formatters';
 import { 
   Carousel, 
   CarouselContent, 
-  CarouselItem, 
-  CarouselNext, 
-  CarouselPrevious 
+  CarouselItem,
 } from "@/components/ui/carousel";
+import { useMediaQuery } from '@/hooks/use-mobile';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -32,48 +31,77 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
     duration,
   } = restaurant;
   
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  
   // Generate placeholder images (in real app, these would come from Google API)
   const placeholderImages = [
-    `https://via.placeholder.com/600x400/F4D35E/2D3047?text=${encodeURIComponent(name)}`,
-    `https://via.placeholder.com/600x400/FF6B35/FFFFFF?text=Food+1`,
-    `https://via.placeholder.com/600x400/D62828/FFFFFF?text=Food+2`,
+    `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(name)}`,
+    `https://via.placeholder.com/800x600/FF6B35/FFFFFF?text=Food+1`,
+    `https://via.placeholder.com/800x600/D62828/FFFFFF?text=Food+2`,
   ];
+  
+  const imagesToUse = photos && photos.length > 0 ? 
+    photos.map(photo => photo.photo_reference || placeholderImages[0]) : 
+    placeholderImages;
   
   // Format price level as $ symbols
   const priceDisplay = price_level ? '$'.repeat(price_level) : '$';
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
+  const nextImage = () => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % imagesToUse.length);
+  };
+
+  const prevImage = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? imagesToUse.length - 1 : prevIndex - 1
+    );
+  };
+  
   return (
     <Link to={`/restaurant/${id}`}>
       <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 bg-white border-0">
-        <div className="relative h-64 overflow-hidden">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {(photos && photos.length > 0 ? photos.map((photo, index) => (
-                <CarouselItem key={index}>
-                  <div className="h-64 w-full">
-                    <img 
-                      src={photo.photo_reference || placeholderImages[index % placeholderImages.length]} 
-                      alt={`${name} - photo ${index+1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </CarouselItem>
-              )) : placeholderImages.map((img, index) => (
-                <CarouselItem key={index}>
-                  <div className="h-64 w-full">
-                    <img 
-                      src={img} 
-                      alt={`${name} - photo ${index+1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </CarouselItem>
-              )))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2 bg-white/80" />
-            <CarouselNext className="right-2 bg-white/80" />
-          </Carousel>
+        <div className="relative h-80 overflow-hidden">
+          {/* Instagram-style carousel with dots and side-swipe navigation */}
+          <div className="relative h-full w-full">
+            <img 
+              src={imagesToUse[currentIndex]} 
+              alt={`${name} - photo ${currentIndex+1}`}
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Navigation arrows */}
+            <button 
+              onClick={(e) => { e.preventDefault(); prevImage(); }} 
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            
+            <button 
+              onClick={(e) => { e.preventDefault(); nextImage(); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors"
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+            
+            {/* Instagram-style dot indicators */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
+              {imagesToUse.map((_, index) => (
+                <div 
+                  key={index} 
+                  className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
+                  aria-label={`Go to image ${index+1}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => { e.preventDefault(); setCurrentIndex(index); }}
+                ></div>
+              ))}
+            </div>
+          </div>
           
           {opening_hours?.open_now !== undefined && (
             <div className="absolute top-2 right-2 z-10">
