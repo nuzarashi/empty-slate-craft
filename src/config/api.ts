@@ -1,0 +1,4 @@
+
+// API Configuration
+export const SUPABASE_EDGE_FUNCTION_URL = 'https://bizeubjoglqagnmnttie.supabase.co/functions/v1/google-places-api';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpemV1YmpvZ2xxYWdubW50dGllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzU0MzAsImV4cCI6MjA1OTk1MTQzMH0.2Q_CFSelTqlXrofaiMYUKzOIvmqaW_NTPun2hIPE9l4';
