@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Location, Restaurant, Review } from '../types';
 
-// In a real app, you would need to secure this API key
-// For a production app, we'd use environment variables and server-side requests
-const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY_HERE';
+// Edge Function URL
+const SUPABASE_EDGE_FUNCTION_URL = 'https://bizeubjoglqagnmnttie.supabase.co/functions/v1/google-places-api';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpemV1YmpvZ2xxYWdubW50dGllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzU0MzAsImV4cCI6MjA1OTk1MTQzMH0.2Q_CFSelTqlXrofaiMYUKzOIvmqaW_NTPun2hIPE9l4';
 
 interface UseGoogleMapsProps {
   location: Location | null;
@@ -148,8 +148,8 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
     setError(null);
     
     try {
-      // In a real implementation, this would be an actual API call to Google Maps
-      // For this demo, we'll use the dummy data instead
+      // For development, we'll still use the dummy data 
+      // But add a commented-out implementation of the Supabase Edge Function call
       
       // Simulating API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -158,35 +158,41 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       setRestaurants(prev => pageToken ? [...prev, ...demoRestaurants] : demoRestaurants);
       setNextPageToken(null); // No more pages in our demo
       
-      // The real implementation would look like this:
+      // The Supabase Edge Function implementation would look like this:
       /*
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=1500&type=restaurant&key=${GOOGLE_MAPS_API_KEY}${pageToken ? `&pagetoken=${pageToken}` : ''}`
-      );
+      const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'searchNearby',
+          location: location,
+          radius: 1500,
+          type: 'restaurant',
+          pageToken: pageToken || null
+        })
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch restaurants');
+        throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
       }
       
       const data = await response.json();
       
-      if (data.status !== 'OK') {
-        throw new Error(data.status);
+      if (data.error) {
+        throw new Error(data.error);
       }
       
       const newRestaurants = data.results.map((place: any) => ({
         ...place,
-        distance: null,
-        duration: null
+        distance: place.distance || null,
+        duration: place.duration || null
       }));
       
       setRestaurants(prev => pageToken ? [...prev, ...newRestaurants] : newRestaurants);
       setNextPageToken(data.next_page_token || null);
-      
-      // Calculate distances for all restaurants
-      if (newRestaurants.length > 0) {
-        calculateDistances(newRestaurants);
-      }
       */
       
     } catch (err) {
@@ -200,25 +206,34 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
 
   const fetchRestaurantDetails = useCallback(async (restaurantId: string) => {
     try {
-      // In a real implementation, this would be an actual API call to Google Maps
-      // For this demo, we'll return the matching restaurant from our dummy data
+      // In a real implementation, this would call the Supabase Edge Function
+      // For demo, we'll return the matching restaurant from our dummy data
       
       return demoRestaurants.find(r => r.id === restaurantId) || null;
       
-      // The real implementation would look like this:
+      // The Supabase Edge Function implementation would look like this:
       /*
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${restaurantId}&fields=reviews,opening_hours&key=${GOOGLE_MAPS_API_KEY}`
-      );
+      const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'getDetails',
+          placeId: restaurantId,
+          fields: 'reviews,opening_hours'
+        })
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch restaurant details');
+        throw new Error(`Failed to fetch restaurant details: ${response.statusText}`);
       }
       
       const data = await response.json();
       
-      if (data.status !== 'OK') {
-        throw new Error(data.status);
+      if (data.error) {
+        throw new Error(data.error);
       }
       
       return data.result;
@@ -234,26 +249,36 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
     if (!location || places.length === 0) return;
     
     try {
-      // In a real implementation, this would be an actual API call to Google Maps Distance Matrix API
+      // In a real implementation, this would be a call to the Supabase Edge Function
       // For this demo, we're already using distances in our dummy data
       
-      // The real implementation would look like this:
+      // The Supabase Edge Function implementation would look like this:
       /*
       const origins = `${location.lat},${location.lng}`;
-      const destinations = places.map(place => `${place.geometry.location.lat},${place.geometry.location.lng}`).join('|');
+      const destinations = places.map(place => `${place.geometry.location.lat},${place.geometry.location.lng}`);
       
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=walking&key=${GOOGLE_MAPS_API_KEY}`
-      );
+      const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'calculateDistances',
+          origins: origins,
+          destinations: destinations,
+          mode: 'walking'
+        })
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to calculate distances');
+        throw new Error(`Failed to calculate distances: ${response.statusText}`);
       }
       
       const data = await response.json();
       
-      if (data.status !== 'OK') {
-        throw new Error(data.status);
+      if (data.error) {
+        throw new Error(data.error);
       }
       
       const updatedRestaurants = places.map((place, index) => {
