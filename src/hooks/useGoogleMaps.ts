@@ -36,6 +36,7 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
         toast.info("No restaurants found nearby. Try adjusting your filters or location.");
       } else {
         console.log(`Found ${newRestaurants.length} restaurants`);
+        toast.success(`Found ${newRestaurants.length} restaurants near you!`);
       }
       
       setRestaurants(prev => pageToken ? [...prev, ...newRestaurants] : newRestaurants);
@@ -44,20 +45,32 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurants';
       console.error("Error in fetchRestaurants:", errorMessage);
       setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(`Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   }, [location]);
 
   const fetchRestaurantDetails = useCallback(async (restaurantId: string) => {
-    return await getRestaurantDetails(restaurantId);
+    try {
+      console.log("Fetching details for restaurant ID:", restaurantId);
+      return await getRestaurantDetails(restaurantId);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurant details';
+      console.error("Error in fetchRestaurantDetails:", errorMessage);
+      toast.error(errorMessage);
+      return null;
+    }
   }, []);
 
   const calculateDistances = useCallback(async (places: Restaurant[]) => {
-    if (!location || places.length === 0) return;
+    if (!location || places.length === 0) {
+      console.log("Cannot calculate distances: No location or places");
+      return;
+    }
     
     try {
+      console.log("Calculating distances for", places.length, "restaurants");
       const updatedPlaces = await getDistances(location, places);
       
       setRestaurants(prev => {
@@ -75,7 +88,8 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to calculate distances';
-      console.error(errorMessage);
+      console.error("Error in calculateDistances:", errorMessage);
+      toast.error(`Distance calculation error: ${errorMessage}`);
     }
   }, [location]);
 
@@ -88,6 +102,7 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
 
   const loadMore = useCallback(() => {
     if (nextPageToken) {
+      console.log("Loading more restaurants with token:", nextPageToken);
       fetchRestaurants(nextPageToken);
     }
   }, [nextPageToken, fetchRestaurants]);

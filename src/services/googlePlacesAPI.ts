@@ -3,6 +3,9 @@ import { toast } from 'sonner';
 import type { Location, Restaurant } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
 
+// Google API Key for Places API
+const GOOGLE_API_KEY = 'AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM';
+
 // Fetch nearby restaurants
 export const fetchNearbyRestaurants = async (
   location: Location,
@@ -12,7 +15,8 @@ export const fetchNearbyRestaurants = async (
     console.log('Fetching nearby restaurants with:', { 
       location, 
       url: SUPABASE_EDGE_FUNCTION_URL,
-      pageToken 
+      pageToken,
+      apiKey: 'API key provided' // Log that we have the key (not the actual key)
     });
     
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
@@ -26,7 +30,8 @@ export const fetchNearbyRestaurants = async (
         location: location,
         radius: 1500,
         type: 'restaurant',
-        pageToken: pageToken || null
+        pageToken: pageToken || null,
+        apiKey: GOOGLE_API_KEY
       })
     });
     
@@ -78,7 +83,8 @@ export const fetchRestaurantDetails = async (restaurantId: string): Promise<Rest
       body: JSON.stringify({
         action: 'getDetails',
         placeId: restaurantId,
-        fields: 'reviews,opening_hours'
+        fields: 'reviews,opening_hours',
+        apiKey: GOOGLE_API_KEY
       })
     });
     
@@ -128,7 +134,8 @@ export const calculateDistances = async (
         action: 'calculateDistances',
         origins: origins,
         destinations: destinations,
-        mode: 'walking'
+        mode: 'walking',
+        apiKey: GOOGLE_API_KEY
       })
     });
     
