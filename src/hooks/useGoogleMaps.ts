@@ -4,8 +4,7 @@ import { toast } from 'sonner';
 import type { Location, Restaurant } from '../types';
 import { 
   fetchNearbyRestaurants, 
-  fetchRestaurantDetails as getRestaurantDetails,
-  calculateDistances as getDistances
+  fetchRestaurantDetails as getRestaurantDetails
 } from '../services/googlePlacesAPI';
 
 interface UseGoogleMapsProps {
@@ -62,36 +61,6 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       return null;
     }
   }, []);
-
-  const calculateDistances = useCallback(async (places: Restaurant[]) => {
-    if (!location || places.length === 0) {
-      console.log("Cannot calculate distances: No location or places");
-      return;
-    }
-    
-    try {
-      console.log("Calculating distances for", places.length, "restaurants");
-      const updatedPlaces = await getDistances(location, places);
-      
-      setRestaurants(prev => {
-        const updatedPrev = [...prev];
-        
-        updatedPlaces.forEach(updatedPlace => {
-          const index = updatedPrev.findIndex(place => place.id === updatedPlace.id);
-          
-          if (index !== -1) {
-            updatedPrev[index] = updatedPlace;
-          }
-        });
-        
-        return updatedPrev;
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to calculate distances';
-      console.error("Error in calculateDistances:", errorMessage);
-      toast.error(`Distance calculation error: ${errorMessage}`);
-    }
-  }, [location]);
 
   useEffect(() => {
     if (location) {

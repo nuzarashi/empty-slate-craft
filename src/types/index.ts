@@ -6,6 +6,7 @@ export interface Location {
 
 export interface Restaurant {
   id: string;
+  place_id?: string; // Added place_id for compatibility with Google API
   name: string;
   vicinity: string;
   rating: number;

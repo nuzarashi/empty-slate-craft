@@ -34,15 +34,21 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [currentIndex, setCurrentIndex] = React.useState(0);
   
-  // Generate placeholder images (in real app, these would come from Google API)
+  // Generate placeholder images (in case photos are missing)
   const placeholderImages = [
     `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(name)}`,
     `https://via.placeholder.com/800x600/FF6B35/FFFFFF?text=Food+1`,
     `https://via.placeholder.com/800x600/D62828/FFFFFF?text=Food+2`,
   ];
   
+  // Create image URLs using the photo_reference
+  const getPhotoUrl = (photoRef: string) => {
+    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
+  };
+  
+  // Use actual photos from Google if available
   const imagesToUse = photos && photos.length > 0 ? 
-    photos.map(photo => photo.photo_reference || placeholderImages[0]) : 
+    photos.map(photo => getPhotoUrl(photo.photo_reference)) : 
     placeholderImages;
   
   // Format price level as $ symbols

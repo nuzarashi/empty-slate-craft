@@ -53,14 +53,33 @@ export const fetchNearbyRestaurants = async (
     
     const restaurants = data.results.map((place: any) => ({
       ...place,
+      place_id: place.place_id, // Ensure place_id is included
       distance: place.distance || null,
       duration: place.duration || null
     }));
     
-    return {
-      restaurants,
-      nextPageToken: data.next_page_token || null
-    };
+    // If we got results, immediately calculate distances
+    if (restaurants.length > 0) {
+      try {
+        const restaurantsWithDistances = await calculateDistances(location, restaurants);
+        return {
+          restaurants: restaurantsWithDistances,
+          nextPageToken: data.next_page_token || null
+        };
+      } catch (err) {
+        console.error('Error calculating distances:', err);
+        // Continue with restaurants without distances
+        return {
+          restaurants,
+          nextPageToken: data.next_page_token || null
+        };
+      }
+    } else {
+      return {
+        restaurants,
+        nextPageToken: data.next_page_token || null
+      };
+    }
   } catch (err) {
     console.error('Error fetching restaurants:', err);
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurants';
@@ -83,7 +102,7 @@ export const fetchRestaurantDetails = async (restaurantId: string): Promise<Rest
       body: JSON.stringify({
         action: 'getDetails',
         placeId: restaurantId,
-        fields: 'reviews,opening_hours',
+        fields: 'name,rating,vicinity,user_ratings_total,price_level,photos,geometry,opening_hours,reviews',
         apiKey: GOOGLE_API_KEY
       })
     });

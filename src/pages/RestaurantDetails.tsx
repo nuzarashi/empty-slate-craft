@@ -50,7 +50,7 @@ const RestaurantDetails = () => {
         <Header />
         <div className="p-4 flex flex-col items-center justify-center h-[50vh]">
           <p className="text-xl mb-4">Restaurant not found</p>
-          <Link to="/">
+          <Link to="/restaurants">
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to restaurants
@@ -75,10 +75,15 @@ const RestaurantDetails = () => {
     reviews
   } = restaurant;
 
-  // Placeholder image if no photos are available
+  // Create photo URL using the photo_reference
+  const getPhotoUrl = (photoRef: string) => {
+    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
+  };
+
+  // Use actual Google photo if available
   const imageUrl = photos && photos.length > 0
-    ? `https://via.placeholder.com/600x400/F4D35E/2D3047?text=${encodeURIComponent(name)}`
-    : `https://via.placeholder.com/600x400/F4D35E/2D3047?text=No+Image`;
+    ? getPhotoUrl(photos[0].photo_reference)
+    : `https://via.placeholder.com/600x400/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
   
   // Format price level as $ symbols
   const priceDisplay = price_level ? '$'.repeat(price_level) : 'Unknown price';
@@ -97,7 +102,7 @@ const RestaurantDetails = () => {
             className="w-full h-full object-cover"
           />
           <Link 
-            to="/"
+            to="/restaurants"
             className="absolute top-4 left-4 bg-white/70 rounded-full p-2 backdrop-blur-sm shadow-md"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -141,7 +146,7 @@ const RestaurantDetails = () => {
           </div>
 
           <a 
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${restaurant.id}`}
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${restaurant.place_id || restaurant.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-food-red hover:text-food-orange flex items-center transition-colors"
