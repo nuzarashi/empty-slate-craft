@@ -9,6 +9,12 @@ export const fetchNearbyRestaurants = async (
   pageToken?: string
 ): Promise<{ restaurants: Restaurant[], nextPageToken: string | null }> => {
   try {
+    console.log('Fetching nearby restaurants with:', { 
+      location, 
+      url: SUPABASE_EDGE_FUNCTION_URL,
+      pageToken 
+    });
+    
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
@@ -24,13 +30,19 @@ export const fetchNearbyRestaurants = async (
       })
     });
     
+    console.log('Response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('API error response:', errorText);
+      throw new Error(`Failed to fetch restaurants: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log('API response data:', data);
     
     if (data.error) {
+      console.error('API returned error:', data.error);
       throw new Error(data.error);
     }
     
@@ -45,7 +57,9 @@ export const fetchNearbyRestaurants = async (
       nextPageToken: data.next_page_token || null
     };
   } catch (err) {
+    console.error('Error fetching restaurants:', err);
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurants';
+    toast.error(errorMessage);
     throw new Error(errorMessage);
   }
 };
@@ -53,6 +67,8 @@ export const fetchNearbyRestaurants = async (
 // Fetch restaurant details
 export const fetchRestaurantDetails = async (restaurantId: string): Promise<Restaurant | null> => {
   try {
+    console.log('Fetching restaurant details for:', restaurantId);
+    
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
@@ -66,18 +82,25 @@ export const fetchRestaurantDetails = async (restaurantId: string): Promise<Rest
       })
     });
     
+    console.log('Details response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch restaurant details: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Details API error:', errorText);
+      throw new Error(`Failed to fetch restaurant details: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log('Details API response:', data);
     
     if (data.error) {
+      console.error('Details API returned error:', data.error);
       throw new Error(data.error);
     }
     
     return data.result;
   } catch (err) {
+    console.error('Error fetching restaurant details:', err);
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurant details';
     toast.error(errorMessage);
     return null;
@@ -90,6 +113,8 @@ export const calculateDistances = async (
   places: Restaurant[]
 ): Promise<Restaurant[]> => {
   try {
+    console.log('Calculating distances for', places.length, 'places');
+    
     const origins = `${userLocation.lat},${userLocation.lng}`;
     const destinations = places.map(place => `${place.geometry.location.lat},${place.geometry.location.lng}`);
     
@@ -107,13 +132,19 @@ export const calculateDistances = async (
       })
     });
     
+    console.log('Distances response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Failed to calculate distances: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Distances API error:', errorText);
+      throw new Error(`Failed to calculate distances: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log('Distances API response:', data);
     
     if (data.error) {
+      console.error('Distances API returned error:', data.error);
       throw new Error(data.error);
     }
     
@@ -131,6 +162,7 @@ export const calculateDistances = async (
       return place;
     });
   } catch (err) {
+    console.error('Error calculating distances:', err);
     const errorMessage = err instanceof Error ? err.message : 'Failed to calculate distances';
     console.error(errorMessage);
     return places;

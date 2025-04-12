@@ -19,18 +19,30 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   
   const fetchRestaurants = useCallback(async (pageToken?: string) => {
-    if (!location) return;
+    if (!location) {
+      console.log("Cannot fetch restaurants: No location provided");
+      return;
+    }
     
     setLoading(true);
     setError(null);
     
     try {
+      console.log("Fetching restaurants with location:", location);
       const { restaurants: newRestaurants, nextPageToken: token } = await fetchNearbyRestaurants(location, pageToken);
+      
+      if (newRestaurants.length === 0) {
+        console.log("No restaurants found");
+        toast.info("No restaurants found nearby. Try adjusting your filters or location.");
+      } else {
+        console.log(`Found ${newRestaurants.length} restaurants`);
+      }
       
       setRestaurants(prev => pageToken ? [...prev, ...newRestaurants] : newRestaurants);
       setNextPageToken(token);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurants';
+      console.error("Error in fetchRestaurants:", errorMessage);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -69,6 +81,7 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
 
   useEffect(() => {
     if (location) {
+      console.log("Location available, triggering restaurant fetch");
       fetchRestaurants();
     }
   }, [location, fetchRestaurants]);
