@@ -1,13 +1,23 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Header from '@/components/Header';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import useGoogleMaps from '@/hooks/useGoogleMaps';
-import type { Restaurant } from '@/types';
+import { generateReviewSummary } from '@/utils/reviewSummary';
+import type { Restaurant, Review } from '@/types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
+
+type ReviewSortOption = 'recent' | 'helpful';
 
 const RestaurantDetails = () => {
   const { id } = useParams();
@@ -16,6 +26,8 @@ const RestaurantDetails = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [reviewSort, setReviewSort] = useState<ReviewSortOption>('recent');
+  const [reviewSummaries, setReviewSummaries] = useState<{[key: string]: string}>({});
 
   // Function to get photo URL
   const getPhotoUrl = (photoRef: string) => {
@@ -31,6 +43,43 @@ const RestaurantDetails = () => {
     setCurrentPhotoIndex((prevIndex) => 
       prevIndex === 0 ? photoUrls.length - 1 : prevIndex - 1
     );
+  };
+
+  // Sort reviews based on selected option
+  const getSortedReviews = () => {
+    if (!restaurant?.reviews) return [];
+    
+    return [...restaurant.reviews].sort((a, b) => {
+      if (reviewSort === 'recent') {
+        return b.time - a.time; // Most recent first
+      } else {
+        // For 'helpful', in a real scenario we would use a helpfulness score
+        // For demo purposes, we'll mix rating and recency
+        return (b.rating * 10000 + b.time) - (a.rating * 10000 + a.time);
+      }
+    });
+  };
+
+  // Generate AI summary for individual reviews
+  const getReviewSummary = async (reviewIndex: number, reviewText: string) => {
+    if (reviewSummaries[reviewIndex] || !reviewText) return;
+    
+    try {
+      const summary = await generateReviewSummary([{ 
+        author_name: '', 
+        rating: 0, 
+        text: reviewText,
+        time: 0,
+        relative_time_description: ''
+      }]);
+      
+      setReviewSummaries(prev => ({
+        ...prev,
+        [reviewIndex]: summary
+      }));
+    } catch (error) {
+      console.error('Error generating review summary:', error);
+    }
   };
 
   useEffect(() => {
@@ -62,6 +111,15 @@ const RestaurantDetails = () => {
 
     loadRestaurantDetails();
   }, [id, fetchRestaurantDetails]);
+
+  useEffect(() => {
+    // Generate summaries for reviews when they load
+    if (restaurant?.reviews) {
+      restaurant.reviews.forEach((review, index) => {
+        getReviewSummary(index, review.text);
+      });
+    }
+  }, [restaurant?.reviews]);
 
   if (loading) {
     return (
@@ -108,6 +166,9 @@ const RestaurantDetails = () => {
   // Format price level as $ symbols
   const priceDisplay = price_level ? '$'.repeat(price_level) : 'Unknown price';
   const priceClass = price_level ? `price-level-${price_level}` : '';
+
+  // Get sorted reviews
+  const sortedReviews = getSortedReviews();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -185,8 +246,8 @@ const RestaurantDetails = () => {
           
           <div className="flex items-center flex-wrap gap-4 mb-3">
             <div className="flex items-center">
-              <Star className="w-4 h-4 text-food-yellow mr-1" />
-              <span className="font-medium">{rating}</span>
+              <Star className="w-6 h-6 text-food-yellow mr-1" fill="gold" strokeWidth={0.5} />
+              <span className="font-medium text-lg">{rating}</span>
               <span className="text-muted-foreground text-xs ml-1">({user_ratings_total})</span>
             </div>
             
@@ -223,23 +284,61 @@ const RestaurantDetails = () => {
           </div>
         )}
         
-        {/* Individual reviews */}
+        {/* Review sorting dropdown */}
         {reviews && reviews.length > 0 && (
           <div className="p-4">
-            <h2 className="text-lg font-semibold mb-3">Recent Reviews</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-semibold">Reviews</h2>
+              <Select
+                value={reviewSort}
+                onValueChange={(value: string) => setReviewSort(value as ReviewSortOption)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort reviews by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent</SelectItem>
+                  <SelectItem value="helpful">Most Helpful</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="space-y-4">
-              {reviews.map((review, index) => (
+              {sortedReviews.map((review, index) => (
                 <div key={index} className="bg-white p-3 rounded-lg shadow-sm">
                   <div className="flex justify-between items-center mb-2">
                     <div className="font-medium">{review.author_name}</div>
                     <div className="flex items-center">
-                      <Star className="w-3 h-3 text-food-yellow mr-1" />
-                      <span>{review.rating}</span>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < review.rating ? 'text-food-yellow' : 'text-gray-300'}`}
+                          fill={i < review.rating ? 'gold' : 'none'}
+                          strokeWidth={0.5}
+                        />
+                      ))}
                     </div>
                   </div>
-                  <p className="text-sm text-gray-700">{review.text}</p>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {review.relative_time_description}
+                  
+                  {/* AI summary instead of full review text */}
+                  <p className="text-sm text-gray-700">
+                    {reviewSummaries[index] || (
+                      <>
+                        <span className="text-xs text-muted-foreground">Generating AI summary...</span>
+                        <br />
+                        {review.text.length > 100 ? `${review.text.substring(0, 100)}...` : review.text}
+                      </>
+                    )}
+                  </p>
+                  
+                  <div className="flex justify-between items-center mt-1">
+                    <div className="text-xs text-muted-foreground">
+                      {review.relative_time_description}
+                    </div>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <ThumbsUp className="w-3 h-3 mr-1" />
+                      <span>Helpful</span>
+                    </div>
                   </div>
                 </div>
               ))}

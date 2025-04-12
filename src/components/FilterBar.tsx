@@ -51,10 +51,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
   };
 
   const handlePriceChange = (value: number[]) => {
+    // Now we're using a min and max slider for price range
     updateFilters({ priceLevel: Array.from({ length: value[1] - value[0] + 1 }, (_, i) => i + value[0]) });
   };
 
-  // Get the price range for display
+  // Get the min and max price for the range slider
   const minPrice = Math.min(...filters.priceLevel);
   const maxPrice = Math.max(...filters.priceLevel);
   
@@ -166,7 +167,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
         <div className="mb-4">
           <div className="flex justify-between mb-1">
             <Label className="text-sm">Minimum Rating</Label>
-            <span className="text-sm font-medium">{filters.minRating}+ ⭐</span>
+            <span className="text-sm font-medium">{filters.minRating}+ <Star className="inline w-4 h-4 text-food-yellow" fill="gold" strokeWidth={0.5} /></span>
           </div>
           <Slider
             defaultValue={[filters.minRating]}
@@ -178,7 +179,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
           />
         </div>
         
-        {/* Price Range Filter */}
+        {/* Price Range Filter - Now with Min and Max knobs */}
         <div>
           <div className="flex justify-between mb-1">
             <Label className="text-sm">Price Range</Label>
@@ -188,6 +189,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
           </div>
           <Slider
             defaultValue={[minPrice, maxPrice]}
+            value={[minPrice, maxPrice]}
             min={1}
             max={4}
             step={1}

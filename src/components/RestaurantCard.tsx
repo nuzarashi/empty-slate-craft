@@ -91,10 +91,10 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
               className="w-full h-full object-cover"
             />
             
-            {/* Navigation arrows */}
+            {/* Navigation arrows - these need onClick handlers to prevent event bubbling */}
             <button 
               onClick={prevImage} 
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
               aria-label="Previous image"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -102,7 +102,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
             
             <button 
               onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
               aria-label="Next image"
             >
               <ChevronRight className="w-6 h-6" />
@@ -148,8 +148,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex items-center">
-                <Star className="w-4 h-4 text-food-yellow mr-1" />
-                <span className="font-medium">{rating}</span>
+                <Star className="w-6 h-6 text-food-yellow mr-1" fill="gold" strokeWidth={0.5} />
+                <span className="font-medium text-lg">{rating}</span>
                 <span className="text-muted-foreground text-xs ml-1">({user_ratings_total})</span>
               </div>
               

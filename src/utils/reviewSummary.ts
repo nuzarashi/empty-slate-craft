@@ -76,7 +76,44 @@ const extractCommonThemes = (reviews: Review[]): string[] => {
 };
 
 const createSummary = (reviews: Review[], themes: string[]): string => {
-  // Calculate average rating
+  // For a single review, generate a concise summary
+  if (reviews.length === 1 && reviews[0].text) {
+    const reviewText = reviews[0].text;
+    
+    // Very simple summarization for demo purposes
+    // In a real app, this would be a call to an AI API
+    if (reviewText.length <= 100) {
+      return reviewText;
+    }
+    
+    // For longer reviews, create a simple summary
+    const firstSentence = reviewText.split('.')[0];
+    let summary = firstSentence;
+    
+    // Extract key phrases based on themes
+    themes.forEach(theme => {
+      const themeIndex = reviewText.toLowerCase().indexOf(theme);
+      if (themeIndex > -1) {
+        const start = Math.max(0, reviewText.lastIndexOf('.', themeIndex) + 1);
+        const end = reviewText.indexOf('.', themeIndex + theme.length) + 1;
+        if (end > start) {
+          const sentence = reviewText.substring(start, end).trim();
+          if (!summary.includes(sentence) && sentence.length > 10) {
+            summary += ' ' + sentence;
+          }
+        }
+      }
+    });
+    
+    // Add sentiment based on any keywords found
+    if (reviewText.toLowerCase().includes('recommend')) {
+      summary += " Recommends this restaurant.";
+    }
+    
+    return summary;
+  }
+
+  // For multiple reviews, calculate average rating
   const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
   
   // Generate sentiment
@@ -143,3 +180,39 @@ const createSummary = (reviews: Review[], themes: string[]): string => {
   
   return `${sentiment} for ${themeText}.`;
 };
+
+// For a production app, you would implement an actual API call to a service like OpenAI
+// Example implementation (commented out):
+/*
+const generateReviewSummaryWithAI = async (reviewText: string): Promise<string> => {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that summarizes restaurant reviews concisely in 1-2 sentences.'
+          },
+          {
+            role: 'user',
+            content: `Summarize this restaurant review in 1-2 sentences: ${reviewText}`
+          }
+        ],
+        max_tokens: 100
+      })
+    });
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating AI summary:', error);
+    return 'Could not generate summary.';
+  }
+};
+*/

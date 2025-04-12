@@ -41,6 +41,7 @@ export interface Review {
 export type MealType = 'main' | 'drinking';
 export type DietaryRestriction = 'none' | 'vegetarian' | 'vegan' | 'gluten-free' | 'halal';
 export type SortOption = 'distance' | 'rating' | 'price-asc' | 'price-desc';
+export type ReviewSortOption = 'recent' | 'helpful';
 
 export interface FilterOptions {
   mealType: MealType;
