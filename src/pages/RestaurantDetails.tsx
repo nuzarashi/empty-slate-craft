@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -14,15 +14,46 @@ const RestaurantDetails = () => {
   const { fetchRestaurantDetails } = useGoogleMaps({ location: null });
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+
+  // Function to get photo URL
+  const getPhotoUrl = (photoRef: string) => {
+    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
+  };
+
+  // Navigation functions for photo carousel
+  const nextPhoto = () => {
+    setCurrentPhotoIndex((prevIndex) => (prevIndex + 1) % photoUrls.length);
+  };
+
+  const prevPhoto = () => {
+    setCurrentPhotoIndex((prevIndex) => 
+      prevIndex === 0 ? photoUrls.length - 1 : prevIndex - 1
+    );
+  };
 
   useEffect(() => {
     const loadRestaurantDetails = async () => {
       if (!id) return;
       setLoading(true);
       try {
+        console.log("Fetching restaurant details for ID:", id);
         const details = await fetchRestaurantDetails(id);
         if (details) {
           setRestaurant(details);
+          
+          // Generate photo URLs
+          if (details.photos && details.photos.length > 0) {
+            // Limit to 5 photos max
+            const urls = details.photos.slice(0, 5).map(photo => 
+              getPhotoUrl(photo.photo_reference)
+            );
+            setPhotoUrls(urls);
+          } else {
+            // Fallback image
+            setPhotoUrls([`https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(details.name)}`]);
+          }
         }
       } finally {
         setLoading(false);
@@ -67,23 +98,12 @@ const RestaurantDetails = () => {
     rating,
     user_ratings_total,
     price_level,
-    photos,
     opening_hours,
     distance,
     duration,
     reviewSummary,
     reviews
   } = restaurant;
-
-  // Create photo URL using the photo_reference
-  const getPhotoUrl = (photoRef: string) => {
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
-  };
-
-  // Use actual Google photo if available
-  const imageUrl = photos && photos.length > 0
-    ? getPhotoUrl(photos[0].photo_reference)
-    : `https://via.placeholder.com/600x400/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
   
   // Format price level as $ symbols
   const priceDisplay = price_level ? '$'.repeat(price_level) : 'Unknown price';
@@ -94,13 +114,53 @@ const RestaurantDetails = () => {
       <Header locationName={name} />
       
       <main className="pb-16">
-        {/* Hero image */}
+        {/* Hero image with carousel */}
         <div className="relative w-full h-64 md:h-80">
-          <img 
-            src={imageUrl} 
-            alt={name} 
-            className="w-full h-full object-cover"
-          />
+          {photoUrls.length > 0 && (
+            <>
+              <img 
+                src={photoUrls[currentPhotoIndex]} 
+                alt={`${name} - photo ${currentPhotoIndex+1}`}
+                className="w-full h-full object-cover" 
+              />
+              
+              {photoUrls.length > 1 && (
+                <>
+                  {/* Navigation arrows */}
+                  <button 
+                    onClick={prevPhoto} 
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 hover:bg-black/50 transition-colors"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  
+                  <button 
+                    onClick={nextPhoto}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 hover:bg-black/50 transition-colors"
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                  
+                  {/* Photo indicator dots */}
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
+                    {photoUrls.map((_, index) => (
+                      <div 
+                        key={index} 
+                        className={`w-2 h-2 rounded-full transition-all ${index === currentPhotoIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
+                        aria-label={`Go to photo ${index+1}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setCurrentPhotoIndex(index)}
+                      ></div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          
           <Link 
             to="/restaurants"
             className="absolute top-4 left-4 bg-white/70 rounded-full p-2 backdrop-blur-sm shadow-md"

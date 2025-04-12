@@ -53,7 +53,9 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
   const fetchRestaurantDetails = useCallback(async (restaurantId: string) => {
     try {
       console.log("Fetching details for restaurant ID:", restaurantId);
-      return await getRestaurantDetails(restaurantId);
+      // Use place_id if available, otherwise fall back to id
+      const placeId = restaurantId.includes("place_id:") ? restaurantId.replace("place_id:", "") : restaurantId;
+      return await getRestaurantDetails(placeId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurant details';
       console.error("Error in fetchRestaurantDetails:", errorMessage);

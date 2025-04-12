@@ -1,17 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, MapPin, Star, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Restaurant } from '../types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem,
-} from "@/components/ui/carousel";
-import { useMediaQuery } from '@/hooks/use-mobile';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -20,6 +14,7 @@ interface RestaurantCardProps {
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const {
     id,
+    place_id,
     name,
     vicinity,
     rating,
@@ -31,55 +26,74 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
     duration,
   } = restaurant;
   
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   
-  // Generate placeholder images (in case photos are missing)
-  const placeholderImages = [
-    `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(name)}`,
-    `https://via.placeholder.com/800x600/FF6B35/FFFFFF?text=Food+1`,
-    `https://via.placeholder.com/800x600/D62828/FFFFFF?text=Food+2`,
-  ];
-  
-  // Create image URLs using the photo_reference
+  // Create photo URLs using the photo_reference
   const getPhotoUrl = (photoRef: string) => {
     return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
   };
   
-  // Use actual photos from Google if available
-  const imagesToUse = photos && photos.length > 0 ? 
-    photos.map(photo => getPhotoUrl(photo.photo_reference)) : 
-    placeholderImages;
+  useEffect(() => {
+    // Generate image URLs
+    const generateImageUrls = () => {
+      // If photos exist from Google API, use them
+      if (photos && photos.length > 0) {
+        // Limit to 5 photos max
+        const photoRefs = photos.slice(0, 5).map(photo => photo.photo_reference);
+        return photoRefs.map(ref => getPhotoUrl(ref));
+      } 
+      
+      // Fallback to placeholder images
+      return [
+        `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(name)}`,
+        `https://via.placeholder.com/800x600/FF6B35/FFFFFF?text=Food+1`,
+        `https://via.placeholder.com/800x600/D62828/FFFFFF?text=Food+2`,
+        `https://via.placeholder.com/800x600/0A9396/FFFFFF?text=Food+3`,
+        `https://via.placeholder.com/800x600/005F73/FFFFFF?text=Food+4`,
+      ];
+    };
+    
+    setImageUrls(generateImageUrls());
+  }, [photos, name]);
   
   // Format price level as $ symbols
   const priceDisplay = price_level ? '$'.repeat(price_level) : '$';
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
-  const nextImage = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % imagesToUse.length);
+  const nextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
   };
 
-  const prevImage = () => {
+  const prevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? imagesToUse.length - 1 : prevIndex - 1
+      prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
     );
   };
   
+  // Create the restaurant detail route link with the proper ID
+  // If place_id exists, use it prefixed with "place_id:"
+  const detailLink = place_id ? `/restaurant/place_id:${place_id}` : `/restaurant/${id}`;
+  
   return (
-    <Link to={`/restaurant/${id}`}>
+    <Link to={detailLink}>
       <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 bg-white border-0">
         <div className="relative h-80 overflow-hidden">
           {/* Instagram-style carousel with dots and side-swipe navigation */}
           <div className="relative h-full w-full">
             <img 
-              src={imagesToUse[currentIndex]} 
+              src={imageUrls[currentIndex]} 
               alt={`${name} - photo ${currentIndex+1}`}
               className="w-full h-full object-cover"
             />
             
             {/* Navigation arrows */}
             <button 
-              onClick={(e) => { e.preventDefault(); prevImage(); }} 
+              onClick={prevImage} 
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors"
               aria-label="Previous image"
             >
@@ -87,7 +101,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
             </button>
             
             <button 
-              onClick={(e) => { e.preventDefault(); nextImage(); }}
+              onClick={nextImage}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors"
               aria-label="Next image"
             >
@@ -96,14 +110,18 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
             
             {/* Instagram-style dot indicators */}
             <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
-              {imagesToUse.map((_, index) => (
+              {imageUrls.map((_, index) => (
                 <div 
                   key={index} 
                   className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
                   aria-label={`Go to image ${index+1}`}
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => { e.preventDefault(); setCurrentIndex(index); }}
+                  onClick={(e) => { 
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCurrentIndex(index); 
+                  }}
                 ></div>
               ))}
             </div>
