@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -51,18 +50,15 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
   };
 
   const handlePriceChange = (value: number[]) => {
-    // Now we're using a min and max slider for price range
     updateFilters({ priceLevel: Array.from({ length: value[1] - value[0] + 1 }, (_, i) => i + value[0]) });
   };
 
-  // Get the min and max price for the range slider
   const minPrice = Math.min(...filters.priceLevel);
   const maxPrice = Math.max(...filters.priceLevel);
   
   return (
-    <div className={cn("bg-white px-4 py-3 border-b", className)}>
+    <div className={cn("bg-white px-4 py-3 border-b relative z-20", className)}>
       <div className="flex flex-wrap items-center gap-2">
-        {/* Meal Type Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -84,7 +80,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
           </DropdownMenuContent>
         </DropdownMenu>
         
-        {/* Dietary Restrictions */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -113,7 +108,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
           </DropdownMenuContent>
         </DropdownMenu>
         
-        {/* Sort By */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -148,7 +142,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
           </DropdownMenuContent>
         </DropdownMenu>
         
-        {/* Open Now Toggle */}
         <div className="flex items-center ml-auto space-x-2">
           <Switch
             id="open-now"
@@ -163,7 +156,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
       </div>
       
       <div className="mt-4 px-2">
-        {/* Rating Filter */}
         <div className="mb-4">
           <div className="flex justify-between mb-1">
             <Label className="text-sm">Minimum Rating</Label>
@@ -179,7 +171,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
           />
         </div>
         
-        {/* Price Range Filter - Now with Min and Max knobs */}
         <div>
           <div className="flex justify-between mb-1">
             <Label className="text-sm">Price Range</Label>

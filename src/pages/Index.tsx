@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,7 @@ const Index = () => {
         
         {/* Filter Controls */}
         {location && (
-          <div className="mb-4 sticky top-16 z-[5] bg-gray-50 pt-1 pb-2">
+          <div className="mb-4 sticky top-16 z-30 bg-gray-50 pt-1 pb-2">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold">Nearby Spots</h2>
               <Button 
