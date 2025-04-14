@@ -1,4 +1,3 @@
-
 import React, { createContext } from 'react';
 import { Globe } from 'lucide-react';
 import {
@@ -159,14 +158,21 @@ export const translations = {
   }
 };
 
-interface LanguageSelectorProps {}
+export interface LanguageSelectorProps {
+  onLanguageChange?: (language: Language) => void;
+}
 
-export const LanguageSelector: React.FC<LanguageSelectorProps> = () => {
+export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ onLanguageChange }) => {
   const { language, setLanguage } = React.useContext(LanguageContext);
   
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage);
     localStorage.setItem('preferredLanguage', newLanguage);
+    
+    // Call the optional callback if provided
+    if (onLanguageChange) {
+      onLanguageChange(newLanguage);
+    }
   };
   
   return (
