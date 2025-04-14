@@ -45,6 +45,28 @@ const createLocalSummary = (reviews: Review[]): string => {
   // For a single review, generate a concise summary
   if (reviews.length === 1 && reviews[0].text) {
     const reviewText = reviews[0].text;
+    const foodKeywords = ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal'];
+    const atmosphereKeywords = ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise'];
+    
+    // Try to extract food and atmosphere related sentences
+    const sentences = reviewText.split(/[.!?]+/).filter(Boolean);
+    const foodSentences = sentences.filter(s => 
+      foodKeywords.some(keyword => s.toLowerCase().includes(keyword))
+    );
+    const atmosphereSentences = sentences.filter(s => 
+      atmosphereKeywords.some(keyword => s.toLowerCase().includes(keyword))
+    );
+    
+    if (foodSentences.length > 0 || atmosphereSentences.length > 0) {
+      let summary = '';
+      if (foodSentences.length > 0) {
+        summary += foodSentences[0] + '. ';
+      }
+      if (atmosphereSentences.length > 0) {
+        summary += atmosphereSentences[0] + '.';
+      }
+      return summary.trim();
+    }
     
     // Very simple summarization for fallback
     if (reviewText.length <= 100) {
@@ -56,22 +78,38 @@ const createLocalSummary = (reviews: Review[]): string => {
     return `${firstSentence}.`;
   }
 
-  // For multiple reviews, calculate average rating
-  const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  // For multiple reviews, analyze food and atmosphere mentions
+  const foodMentions = countKeywordMentions(reviews, ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal']);
+  const atmosphereMentions = countKeywordMentions(reviews, ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise']);
   
   // Generate sentiment
-  let sentiment;
-  if (avgRating >= 4.5) {
-    sentiment = "Highly praised";
-  } else if (avgRating >= 4) {
-    sentiment = "Well-liked";
-  } else if (avgRating >= 3) {
-    sentiment = "Mixed reviews";
-  } else {
-    sentiment = "Generally disappointing";
+  const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  let foodSentiment = "not specifically mentioned";
+  let atmosphereSentiment = "not specifically mentioned";
+  
+  if (foodMentions > 0) {
+    foodSentiment = avgRating >= 4 ? "praised" : avgRating >= 3 ? "decent" : "criticized";
   }
   
-  return `${sentiment} with an average rating of ${avgRating.toFixed(1)}/5.`;
+  if (atmosphereMentions > 0) {
+    atmosphereSentiment = avgRating >= 4 ? "inviting" : avgRating >= 3 ? "acceptable" : "disappointing";
+  }
+  
+  return `Food quality is ${foodSentiment} and atmosphere is ${atmosphereSentiment} with an average rating of ${avgRating.toFixed(1)}/5.`;
+};
+
+// Helper function to count keyword mentions across reviews
+const countKeywordMentions = (reviews: Review[], keywords: string[]): number => {
+  let count = 0;
+  reviews.forEach(review => {
+    const text = review.text.toLowerCase();
+    keywords.forEach(keyword => {
+      if (text.includes(keyword)) {
+        count++;
+      }
+    });
+  });
+  return count;
 };
 
 // Helper function to extract common themes (simplified version of the original)

@@ -54,11 +54,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that summarizes restaurant reviews concisely in 1-2 sentences. Highlight the key sentiments and most mentioned aspects like food quality, service, ambiance, etc.'
+            content: 'You are a helpful assistant that summarizes restaurant reviews concisely in 1-2 sentences. Focus PRIMARILY on food quality (taste, presentation, portion sizes) and restaurant atmosphere (ambiance, decor, noise level, cleanliness). Only mention other aspects like service or price if they are strongly emphasized in multiple reviews.'
           },
           {
             role: 'user',
-            content: `Summarize these restaurant reviews in 1-2 concise sentences:\n\n${reviewTexts}`
+            content: `Summarize these restaurant reviews focusing on food quality and atmosphere in 1-2 concise sentences:\n\n${reviewTexts}`
           }
         ],
         max_tokens: 100,
