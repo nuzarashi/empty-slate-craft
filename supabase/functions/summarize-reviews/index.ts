@@ -14,6 +14,14 @@ interface Review {
 
 interface RequestBody {
   reviews: Review[];
+  language?: string;
+}
+
+interface CategorySummary {
+  summary: string;
+  cuisine: string;
+  atmosphere: string;
+  service: string;
 }
 
 serve(async (req) => {
@@ -29,18 +37,58 @@ serve(async (req) => {
     }
 
     // Get the request body
-    const { reviews } = await req.json() as RequestBody
+    const { reviews, language = 'en' } = await req.json() as RequestBody
     
     if (!reviews || !Array.isArray(reviews) || reviews.length === 0) {
       throw new Error('Reviews array is required')
     }
 
-    console.log(`Generating summary for ${reviews.length} reviews`)
+    console.log(`Generating summary for ${reviews.length} reviews in ${language}`)
     
     // Format the reviews for OpenAI
     const reviewTexts = reviews.map(review => 
       `"${review.text}" (Rating: ${review.rating}/5)`
     ).join("\n\n")
+
+    // Prepare the system prompt based on language
+    let systemPrompt = '';
+    let userPrompt = '';
+    
+    if (language === 'en') {
+      systemPrompt = 'You are a helpful assistant that analyzes restaurant reviews and provides concise summaries. Extract key information about food quality, atmosphere, and service quality.';
+      userPrompt = `Analyze these restaurant reviews and provide:
+1. A concise overall summary in 1-2 sentences focusing primarily on food quality and atmosphere.
+2. Three specific categorized phrases:
+   - Cuisine: A phrase describing the type and quality of food (e.g., "Authentic Italian pasta", "Flavorful Thai curries")
+   - Atmosphere: A phrase describing the ambiance/vibe (e.g., "Cozy cafe setting", "Upscale modern decor")
+   - Service: A phrase describing staff and service quality (e.g., "Attentive friendly staff", "Prompt professional service")
+
+Reviews:
+${reviewTexts}`;
+    } else if (language === 'ja') {
+      systemPrompt = 'あなたはレストランのレビューを分析し、簡潔な要約を提供する役立つアシスタントです。食品の質、雰囲気、およびサービスの質に関する重要な情報を抽出します。';
+      userPrompt = `以下のレストランレビューを分析し、次の情報を提供してください：
+1. 主に食品の質と雰囲気に焦点を当てた、1〜2文の簡潔な全体的な要約。
+2. 以下の3つの特定のカテゴリーに分類されたフレーズ：
+   - 料理：食品の種類と質を説明するフレーズ（例：「本格的なイタリアンパスタ」、「風味豊かなタイカレー」）
+   - 雰囲気：雰囲気/雰囲気を説明するフレーズ（例：「居心地の良いカフェの設定」、「高級な現代的な装飾」）
+   - サービス：スタッフとサービスの質を説明するフレーズ（例：「気配りのある親切なスタッフ」、「迅速で専門的なサービス」）
+
+レビュー：
+${reviewTexts}`;
+    } else {
+      // Default to English for other languages
+      systemPrompt = 'You are a helpful assistant that analyzes restaurant reviews and provides concise summaries. Extract key information about food quality, atmosphere, and service quality.';
+      userPrompt = `Analyze these restaurant reviews and provide:
+1. A concise overall summary in 1-2 sentences focusing primarily on food quality and atmosphere.
+2. Three specific categorized phrases:
+   - Cuisine: A phrase describing the type and quality of food (e.g., "Authentic Italian pasta", "Flavorful Thai curries")
+   - Atmosphere: A phrase describing the ambiance/vibe (e.g., "Cozy cafe setting", "Upscale modern decor")
+   - Service: A phrase describing staff and service quality (e.g., "Attentive friendly staff", "Prompt professional service")
+
+Reviews:
+${reviewTexts}`;
+    }
 
     // Call OpenAI API to generate summary
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -54,14 +102,14 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that summarizes restaurant reviews concisely in 1-2 sentences. Focus PRIMARILY on food quality (taste, presentation, portion sizes) and restaurant atmosphere (ambiance, decor, noise level, cleanliness). Only mention other aspects like service or price if they are strongly emphasized in multiple reviews.'
+            content: systemPrompt
           },
           {
             role: 'user',
-            content: `Summarize these restaurant reviews focusing on food quality and atmosphere in 1-2 concise sentences:\n\n${reviewTexts}`
+            content: userPrompt
           }
         ],
-        max_tokens: 100,
+        max_tokens: 300,
         temperature: 0.7
       })
     })
@@ -72,11 +120,15 @@ serve(async (req) => {
       throw new Error(`OpenAI API error: ${result.error.message}`)
     }
 
-    // Return the summary
+    const resultContent = result.choices[0].message.content.trim();
+    console.log("OpenAI response:", resultContent);
+    
+    // Parse the response to extract the summary and categories
+    const categorySummary = parseOpenAIResponse(resultContent, language);
+
+    // Return the structured summary
     return new Response(
-      JSON.stringify({
-        summary: result.choices[0].message.content.trim()
-      }),
+      JSON.stringify(categorySummary),
       {
         headers: {
           ...corsHeaders,
@@ -98,3 +150,73 @@ serve(async (req) => {
     )
   }
 })
+
+// Helper function to parse OpenAI response into structured format
+function parseOpenAIResponse(response: string, language: string): CategorySummary {
+  const result: CategorySummary = {
+    summary: '',
+    cuisine: '',
+    atmosphere: '',
+    service: ''
+  };
+  
+  try {
+    // Different parsing logic based on language
+    if (language === 'ja') {
+      // Japanese parsing
+      const lines = response.split('\n').filter(line => line.trim() !== '');
+      
+      // First paragraph or sentence is the summary
+      if (lines.length > 0) {
+        result.summary = lines[0].replace(/^[0-9]+\.\s*/, '');
+      }
+      
+      // Look for category labels in Japanese
+      for (const line of lines) {
+        if (line.includes('料理：')) {
+          result.cuisine = line.split('料理：')[1].trim();
+        } else if (line.includes('雰囲気：')) {
+          result.atmosphere = line.split('雰囲気：')[1].trim();
+        } else if (line.includes('サービス：')) {
+          result.service = line.split('サービス：')[1].trim();
+        }
+      }
+    } else {
+      // Default English parsing
+      const lines = response.split('\n').filter(line => line.trim() !== '');
+      
+      // First paragraph or sentence is the summary
+      if (lines.length > 0) {
+        result.summary = lines[0].replace(/^[0-9]+\.\s*/, '');
+      }
+      
+      // Look for category labels
+      for (const line of lines) {
+        if (line.includes('Cuisine:')) {
+          result.cuisine = line.split('Cuisine:')[1].trim();
+        } else if (line.includes('Atmosphere:')) {
+          result.atmosphere = line.split('Atmosphere:')[1].trim();
+        } else if (line.includes('Service:')) {
+          result.service = line.split('Service:')[1].trim();
+        }
+      }
+    }
+    
+    // Provide fallbacks if any category is missing
+    if (!result.cuisine) result.cuisine = language === 'ja' ? '情報なし' : 'Not mentioned';
+    if (!result.atmosphere) result.atmosphere = language === 'ja' ? '情報なし' : 'Not mentioned';
+    if (!result.service) result.service = language === 'ja' ? '情報なし' : 'Not mentioned';
+    
+    return result;
+  } catch (error) {
+    console.error('Error parsing OpenAI response:', error);
+    
+    // Return a default structure if parsing fails
+    return {
+      summary: response.split('\n')[0] || (language === 'ja' ? 'レビューの要約を生成できませんでした。' : 'Could not parse review summary.'),
+      cuisine: language === 'ja' ? '情報なし' : 'Not mentioned',
+      atmosphere: language === 'ja' ? '情報なし' : 'Not mentioned',
+      service: language === 'ja' ? '情報なし' : 'Not mentioned'
+    };
+  }
+}

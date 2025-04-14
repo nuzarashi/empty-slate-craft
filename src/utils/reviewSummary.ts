@@ -1,11 +1,23 @@
 import type { Review } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
 
+export interface CategorySummary {
+  summary: string;
+  cuisine: string;
+  atmosphere: string;
+  service: string;
+}
+
 // Function to generate review summaries using OpenAI via Supabase Edge Function
-export const generateReviewSummary = async (reviews: Review[]): Promise<string> => {
+export const generateReviewSummary = async (reviews: Review[], language: string = 'en'): Promise<CategorySummary> => {
   try {
     if (reviews.length === 0) {
-      return "No reviews available.";
+      return {
+        summary: language === 'ja' ? 'レビューはありません。' : 'No reviews available.',
+        cuisine: language === 'ja' ? '情報なし' : 'Not mentioned',
+        atmosphere: language === 'ja' ? '情報なし' : 'Not mentioned',
+        service: language === 'ja' ? '情報なし' : 'Not mentioned'
+      };
     }
 
     // Call our Supabase Edge Function
@@ -15,7 +27,7 @@ export const generateReviewSummary = async (reviews: Review[]): Promise<string> 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ reviews })
+      body: JSON.stringify({ reviews, language })
     });
 
     if (!response.ok) {
@@ -29,26 +41,27 @@ export const generateReviewSummary = async (reviews: Review[]): Promise<string> 
     if (data.error) {
       console.error('API returned error:', data.error);
       // Fall back to local summary if OpenAI fails
-      return createLocalSummary(reviews);
+      return createLocalSummary(reviews, language);
     }
 
-    return data.summary;
+    return data;
   } catch (err) {
     console.error('Error generating AI summary:', err);
     // Fall back to local summary if API call fails
-    return createLocalSummary(reviews);
+    return createLocalSummary(reviews, language);
   }
 };
 
 // Local fallback summary generation if the API call fails
-const createLocalSummary = (reviews: Review[]): string => {
+const createLocalSummary = (reviews: Review[], language: string = 'en'): CategorySummary => {
   // For a single review, generate a concise summary
   if (reviews.length === 1 && reviews[0].text) {
     const reviewText = reviews[0].text;
-    const foodKeywords = ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal'];
-    const atmosphereKeywords = ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise'];
+    const foodKeywords = ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal', 'cuisine', 'menu'];
+    const atmosphereKeywords = ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise', 'setting', 'environment'];
+    const serviceKeywords = ['service', 'staff', 'server', 'waiter', 'waitress', 'host', 'hostess', 'friendly', 'attentive'];
     
-    // Try to extract food and atmosphere related sentences
+    // Try to extract food, atmosphere, and service related sentences
     const sentences = reviewText.split(/[.!?]+/).filter(Boolean);
     const foodSentences = sentences.filter(s => 
       foodKeywords.some(keyword => s.toLowerCase().includes(keyword))
@@ -56,46 +69,74 @@ const createLocalSummary = (reviews: Review[]): string => {
     const atmosphereSentences = sentences.filter(s => 
       atmosphereKeywords.some(keyword => s.toLowerCase().includes(keyword))
     );
+    const serviceSentences = sentences.filter(s => 
+      serviceKeywords.some(keyword => s.toLowerCase().includes(keyword))
+    );
     
-    if (foodSentences.length > 0 || atmosphereSentences.length > 0) {
-      let summary = '';
-      if (foodSentences.length > 0) {
-        summary += foodSentences[0] + '. ';
-      }
-      if (atmosphereSentences.length > 0) {
-        summary += atmosphereSentences[0] + '.';
-      }
-      return summary.trim();
+    let summary = '';
+    if (foodSentences.length > 0) {
+      summary += foodSentences[0] + '. ';
+    }
+    if (atmosphereSentences.length > 0) {
+      summary += atmosphereSentences[0] + '.';
     }
     
-    // Very simple summarization for fallback
-    if (reviewText.length <= 100) {
-      return reviewText;
-    }
-    
-    // For longer reviews, return the first sentence
-    const firstSentence = reviewText.split('.')[0];
-    return `${firstSentence}.`;
+    return {
+      summary: summary.trim() || (language === 'ja' ? 'レビューの要約' : 'Review summary'),
+      cuisine: extractPhrase(foodSentences, 3) || (language === 'ja' ? '情報なし' : 'Not mentioned'),
+      atmosphere: extractPhrase(atmosphereSentences, 3) || (language === 'ja' ? '情報なし' : 'Not mentioned'),
+      service: extractPhrase(serviceSentences, 3) || (language === 'ja' ? '情報なし' : 'Not mentioned')
+    };
   }
 
-  // For multiple reviews, analyze food and atmosphere mentions
-  const foodMentions = countKeywordMentions(reviews, ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal']);
-  const atmosphereMentions = countKeywordMentions(reviews, ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise']);
+  // For multiple reviews, analyze food, atmosphere, and service mentions
+  const foodMentions = countKeywordMentions(reviews, ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal', 'cuisine', 'menu']);
+  const atmosphereMentions = countKeywordMentions(reviews, ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise', 'setting', 'environment']);
+  const serviceMentions = countKeywordMentions(reviews, ['service', 'staff', 'server', 'waiter', 'waitress', 'host', 'hostess', 'friendly', 'attentive']);
   
   // Generate sentiment
   const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-  let foodSentiment = "not specifically mentioned";
-  let atmosphereSentiment = "not specifically mentioned";
+  let foodSentiment = language === 'ja' ? '特に言及なし' : 'not specifically mentioned';
+  let atmosphereSentiment = language === 'ja' ? '特に言及なし' : 'not specifically mentioned';
+  let serviceSentiment = language === 'ja' ? '特に言及なし' : 'not specifically mentioned';
   
   if (foodMentions > 0) {
-    foodSentiment = avgRating >= 4 ? "praised" : avgRating >= 3 ? "decent" : "criticized";
+    foodSentiment = avgRating >= 4 
+      ? (language === 'ja' ? '絶賛されている' : 'praised') 
+      : avgRating >= 3 
+        ? (language === 'ja' ? '満足できる' : 'decent') 
+        : (language === 'ja' ? '批判されている' : 'criticized');
   }
   
   if (atmosphereMentions > 0) {
-    atmosphereSentiment = avgRating >= 4 ? "inviting" : avgRating >= 3 ? "acceptable" : "disappointing";
+    atmosphereSentiment = avgRating >= 4 
+      ? (language === 'ja' ? '魅力的な' : 'inviting') 
+      : avgRating >= 3 
+        ? (language === 'ja' ? '許容できる' : 'acceptable') 
+        : (language === 'ja' ? '残念な' : 'disappointing');
+  }
+
+  if (serviceMentions > 0) {
+    serviceSentiment = avgRating >= 4 
+      ? (language === 'ja' ? '親切な' : 'friendly and attentive') 
+      : avgRating >= 3 
+        ? (language === 'ja' ? '普通の' : 'adequate') 
+        : (language === 'ja' ? '遅い' : 'slow or inattentive');
   }
   
-  return `Food quality is ${foodSentiment} and atmosphere is ${atmosphereSentiment} with an average rating of ${avgRating.toFixed(1)}/5.`;
+  // Extract cuisine type
+  const cuisineType = extractCuisineType(reviews) || (language === 'ja' ? '一般的な料理' : 'General cuisine');
+  
+  const summary = language === 'ja'
+    ? `料理の質は${foodSentiment}で、雰囲気は${atmosphereSentiment}です。平均評価は${avgRating.toFixed(1)}/5です。`
+    : `Food quality is ${foodSentiment} and atmosphere is ${atmosphereSentiment} with an average rating of ${avgRating.toFixed(1)}/5.`;
+  
+  return {
+    summary,
+    cuisine: cuisine(cuisineType, foodSentiment, language),
+    atmosphere: language === 'ja' ? `${atmosphereSentiment}雰囲気` : `${atmosphereSentiment} atmosphere`,
+    service: language === 'ja' ? `${serviceSentiment}サービス` : `${serviceSentiment} service`
+  };
 };
 
 // Helper function to count keyword mentions across reviews
@@ -112,66 +153,66 @@ const countKeywordMentions = (reviews: Review[], keywords: string[]): number => 
   return count;
 };
 
-// Helper function to extract common themes (simplified version of the original)
-const extractCommonThemes = (reviews: Review[]): string[] => {
-  // This is a simplified implementation
-  // In a real app, we would use NLP techniques to extract themes
+// Helper function to extract a short phrase from sentences
+const extractPhrase = (sentences: string[], maxWords: number): string => {
+  if (sentences.length === 0) return '';
   
-  const keywords = [
-    'delicious',
-    'tasty',
-    'fresh',
-    'atmosphere',
-    'service',
-    'friendly',
-    'price',
-    'expensive',
-    'cheap',
-    'value',
-    'portion',
-    'authentic',
-    'wait',
-    'crowded',
-    'quiet',
-    'noisy',
-    'ambiance',
-    'clean',
-    'dirty',
-    'recommend',
-    'spicy',
-    'sweet',
-    'salty',
-    'bitter',
-    'staff',
-    'menu',
-    'variety',
-    'limited',
-    'parking',
-    'location',
-    'reservations',
-    'vegan',
-    'vegetarian',
-    'gluten-free',
-    'halal'
+  const sentence = sentences[0];
+  const words = sentence.split(' ');
+  
+  if (words.length <= maxWords) return sentence;
+  
+  return words.slice(0, maxWords).join(' ') + '...';
+};
+
+// Helper function to try to determine cuisine type
+const extractCuisineType = (reviews: Review[]): string => {
+  const cuisineTypes = [
+    'italian', 'japanese', 'chinese', 'mexican', 'thai', 'indian', 'french', 
+    'greek', 'american', 'korean', 'vietnamese', 'mediterranean', 'spanish', 
+    'turkish', 'middle eastern', 'brazilian', 'peruvian', 'ethiopian', 'fusion'
   ];
   
-  const themeCounts: Record<string, number> = {};
+  // Count mentions of cuisine types
+  const cuisineCounts: Record<string, number> = {};
   
   reviews.forEach(review => {
     const text = review.text.toLowerCase();
     
-    keywords.forEach(keyword => {
-      if (text.includes(keyword)) {
-        themeCounts[keyword] = (themeCounts[keyword] || 0) + 1;
+    cuisineTypes.forEach(cuisine => {
+      if (text.includes(cuisine)) {
+        cuisineCounts[cuisine] = (cuisineCounts[cuisine] || 0) + 1;
       }
     });
   });
   
-  // Sort themes by frequency
-  return Object.keys(themeCounts)
-    .filter(theme => themeCounts[theme] > 0)
-    .sort((a, b) => themeCounts[b] - themeCounts[a])
-    .slice(0, 5); // Top 5 themes
+  // Find most mentioned cuisine
+  let mostMentioned = '';
+  let highestCount = 0;
+  
+  Object.entries(cuisineCounts).forEach(([cuisine, count]) => {
+    if (count > highestCount) {
+      highestCount = count;
+      mostMentioned = cuisine;
+    }
+  });
+  
+  return mostMentioned ? mostMentioned.charAt(0).toUpperCase() + mostMentioned.slice(1) : '';
+};
+
+// Create a cuisine description
+const cuisine = (type: string, quality: string, language: string): string => {
+  if (language === 'ja') {
+    if (quality === '絶賛されている') return `絶品の${type}`;
+    if (quality === '満足できる') return `美味しい${type}`;
+    if (quality === '批判されている') return `改善の余地がある${type}`;
+    return type;
+  } else {
+    if (quality === 'praised') return `Excellent ${type}`;
+    if (quality === 'decent') return `Good ${type}`;
+    if (quality === 'criticized') return `Mediocre ${type}`;
+    return type;
+  }
 };
 
 // Legacy code, kept for reference

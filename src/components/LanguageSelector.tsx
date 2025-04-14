@@ -1,3 +1,4 @@
+
 import React, { createContext } from 'react';
 import { Globe } from 'lucide-react';
 import {
@@ -78,6 +79,10 @@ export const translations = {
     generating_ai_summary: 'Generating AI summary...',
     generating_summary: 'Generating summary...',
     ai_review_summary: 'AI Review Summary',
+    what_people_say: 'What People Say',
+    cuisine: 'Cuisine',
+    atmosphere: 'Atmosphere',
+    service: 'Service',
     closed: 'Closed',
     
     // Not Found
@@ -144,6 +149,10 @@ export const translations = {
     generating_ai_summary: 'AI要約を生成中...',
     generating_summary: '要約を生成中...',
     ai_review_summary: 'AIレビュー要約',
+    what_people_say: 'みんなの声',
+    cuisine: '料理',
+    atmosphere: '雰囲気',
+    service: 'サービス',
     closed: '閉店',
     
     // Not Found

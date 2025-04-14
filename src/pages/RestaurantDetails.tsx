@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight, ThumbsUp } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight, ThumbsUp, Utensils, Music, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -13,7 +13,7 @@ import {
 import Header from '@/components/Header';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import useGoogleMaps from '@/hooks/useGoogleMaps';
-import { generateReviewSummary } from '@/utils/reviewSummary';
+import { generateReviewSummary, CategorySummary } from '@/utils/reviewSummary';
 import type { Restaurant, Review, ReviewSortOption } from '@/types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
 import { LanguageContext } from '@/components/LanguageSelector';
@@ -28,6 +28,7 @@ const RestaurantDetails = () => {
   const [reviewSort, setReviewSort] = useState<ReviewSortOption>('recent');
   const [reviewSummaries, setReviewSummaries] = useState<{[key: string]: string}>({});
   const [isGeneratingMainSummary, setIsGeneratingMainSummary] = useState<boolean>(false);
+  const [categorySummary, setCategorySummary] = useState<CategorySummary | null>(null);
   const { language, t } = useContext(LanguageContext);
 
   const getPhotoUrl = (photoRef: string) => {
@@ -66,11 +67,11 @@ const RestaurantDetails = () => {
         text: reviewText,
         time: 0,
         relative_time_description: ''
-      }]);
+      }], language);
       
       setReviewSummaries(prev => ({
         ...prev,
-        [reviewIndex]: summary
+        [reviewIndex]: summary.summary
       }));
     } catch (error) {
       console.error('Error generating review summary:', error);
@@ -83,16 +84,8 @@ const RestaurantDetails = () => {
     
     setIsGeneratingMainSummary(true);
     try {
-      const summary = await generateReviewSummary(reviews);
-      
-      // Update the restaurant object with the summary
-      setRestaurant(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          reviewSummary: summary
-        };
-      });
+      const summary = await generateReviewSummary(reviews, language);
+      setCategorySummary(summary);
     } catch (error) {
       console.error('Error generating all reviews summary:', error);
     } finally {
@@ -132,6 +125,13 @@ const RestaurantDetails = () => {
     loadRestaurantDetails();
   }, [id, fetchRestaurantDetails]);
 
+  // Regenerate summary when language changes
+  useEffect(() => {
+    if (restaurant?.reviews && restaurant.reviews.length > 0) {
+      generateAllReviewsSummary(restaurant.reviews);
+    }
+  }, [language]);
+
   useEffect(() => {
     if (restaurant?.reviews) {
       const sortedReviews = getSortedReviews();
@@ -139,7 +139,7 @@ const RestaurantDetails = () => {
         getReviewSummary(index, review.text);
       });
     }
-  }, [restaurant?.reviews, reviewSort]);
+  }, [restaurant?.reviews, reviewSort, language]);
 
   if (loading) {
     return (
@@ -179,7 +179,6 @@ const RestaurantDetails = () => {
     opening_hours,
     distance,
     duration,
-    reviewSummary,
     reviews
   } = restaurant;
   
@@ -290,16 +289,40 @@ const RestaurantDetails = () => {
           </a>
         </div>
         
-        {(reviewSummary || isGeneratingMainSummary) && (
+        {(categorySummary || isGeneratingMainSummary) && (
           <div className="p-4 bg-white mt-2 rounded-lg shadow-sm mx-4">
-            <h2 className="text-lg font-semibold mb-2">{t('ai_review_summary')}</h2>
+            <h2 className="text-lg font-semibold mb-3">{t('what_people_say')}</h2>
+            
             {isGeneratingMainSummary ? (
-              <div className="flex items-center">
+              <div className="flex items-center mb-4">
                 <LoadingSpinner size="small" />
                 <p className="ml-2 text-muted-foreground">{t('generating_summary')}</p>
               </div>
-            ) : (
-              <p className="text-gray-700">{reviewSummary}</p>
+            ) : categorySummary && (
+              <>
+                <p className="text-gray-700 mb-4">{categorySummary.summary}</p>
+                
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <Utensils className="w-5 h-5 text-food-red mr-2 mt-0.5" />
+                    <div>
+                      <span className="font-medium">{t('cuisine')}:</span> {categorySummary.cuisine}
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <Music className="w-5 h-5 text-food-red mr-2 mt-0.5" />
+                    <div>
+                      <span className="font-medium">{t('atmosphere')}:</span> {categorySummary.atmosphere}
+                    </div>
+                  </li>
+                  <li className="flex items-start">
+                    <User className="w-5 h-5 text-food-red mr-2 mt-0.5" />
+                    <div>
+                      <span className="font-medium">{t('service')}:</span> {categorySummary.service}
+                    </div>
+                  </li>
+                </ul>
+              </>
             )}
           </div>
         )}
