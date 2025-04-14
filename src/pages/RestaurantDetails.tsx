@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import useGoogleMaps from '@/hooks/useGoogleMaps';
 import { generateReviewSummary } from '@/utils/reviewSummary';
 import type { Restaurant, Review, ReviewSortOption } from '@/types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
+import { LanguageContext } from '@/components/LanguageSelector';
 
 const RestaurantDetails = () => {
   const { id } = useParams();
@@ -25,6 +27,8 @@ const RestaurantDetails = () => {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [reviewSort, setReviewSort] = useState<ReviewSortOption>('recent');
   const [reviewSummaries, setReviewSummaries] = useState<{[key: string]: string}>({});
+  const [isGeneratingMainSummary, setIsGeneratingMainSummary] = useState<boolean>(false);
+  const { language, t } = useContext(LanguageContext);
 
   const getPhotoUrl = (photoRef: string) => {
     return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
@@ -73,6 +77,29 @@ const RestaurantDetails = () => {
     }
   };
 
+  // Generate a summary for all reviews
+  const generateAllReviewsSummary = async (reviews: Review[]) => {
+    if (!reviews || reviews.length === 0) return;
+    
+    setIsGeneratingMainSummary(true);
+    try {
+      const summary = await generateReviewSummary(reviews);
+      
+      // Update the restaurant object with the summary
+      setRestaurant(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          reviewSummary: summary
+        };
+      });
+    } catch (error) {
+      console.error('Error generating all reviews summary:', error);
+    } finally {
+      setIsGeneratingMainSummary(false);
+    }
+  };
+
   useEffect(() => {
     const loadRestaurantDetails = async () => {
       if (!id) return;
@@ -90,6 +117,11 @@ const RestaurantDetails = () => {
             setPhotoUrls(urls);
           } else {
             setPhotoUrls([`https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(details.name)}`]);
+          }
+
+          // Generate a summary of all reviews
+          if (details.reviews && details.reviews.length > 0) {
+            generateAllReviewsSummary(details.reviews);
           }
         }
       } finally {
@@ -115,7 +147,7 @@ const RestaurantDetails = () => {
         <Header />
         <div className="flex flex-col items-center justify-center h-[70vh]">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-muted-foreground">Loading restaurant details...</p>
+          <p className="mt-4 text-muted-foreground">{t('loading_restaurant_details')}</p>
         </div>
       </div>
     );
@@ -126,11 +158,11 @@ const RestaurantDetails = () => {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="p-4 flex flex-col items-center justify-center h-[50vh]">
-          <p className="text-xl mb-4">Restaurant not found</p>
+          <p className="text-xl mb-4">{t('restaurant_not_found')}</p>
           <Link to="/restaurants">
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to restaurants
+              {t('back_to_restaurants')}
             </Button>
           </Link>
         </div>
@@ -243,7 +275,7 @@ const RestaurantDetails = () => {
             
             {opening_hours?.open_now !== undefined && (
               <div className={`text-sm ${opening_hours.open_now ? 'text-green-600' : 'text-red-600'}`}>
-                {opening_hours.open_now ? 'Open Now' : 'Closed'}
+                {opening_hours.open_now ? t('open_now') : t('closed')}
               </div>
             )}
           </div>
@@ -254,31 +286,38 @@ const RestaurantDetails = () => {
             rel="noopener noreferrer"
             className="text-sm text-food-red hover:text-food-orange flex items-center transition-colors"
           >
-            View on Google Maps <ExternalLink className="w-3 h-3 ml-1" />
+            {t('view_on_google_maps')} <ExternalLink className="w-3 h-3 ml-1" />
           </a>
         </div>
         
-        {reviewSummary && (
+        {(reviewSummary || isGeneratingMainSummary) && (
           <div className="p-4 bg-white mt-2 rounded-lg shadow-sm mx-4">
-            <h2 className="text-lg font-semibold mb-2">AI Review Summary</h2>
-            <p className="text-gray-700">{reviewSummary}</p>
+            <h2 className="text-lg font-semibold mb-2">{t('ai_review_summary')}</h2>
+            {isGeneratingMainSummary ? (
+              <div className="flex items-center">
+                <LoadingSpinner size="small" />
+                <p className="ml-2 text-muted-foreground">{t('generating_summary')}</p>
+              </div>
+            ) : (
+              <p className="text-gray-700">{reviewSummary}</p>
+            )}
           </div>
         )}
         
         {reviews && reviews.length > 0 && (
           <div className="p-4">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold">Reviews</h2>
+              <h2 className="text-lg font-semibold">{t('reviews')}</h2>
               <Select
                 value={reviewSort}
                 onValueChange={(value: string) => setReviewSort(value as ReviewSortOption)}
               >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort reviews by" />
+                  <SelectValue placeholder={t('sort_reviews_by')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="recent">Most Recent</SelectItem>
-                  <SelectItem value="helpful">Most Helpful</SelectItem>
+                  <SelectItem value="recent">{t('most_recent')}</SelectItem>
+                  <SelectItem value="helpful">{t('most_helpful')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -301,9 +340,11 @@ const RestaurantDetails = () => {
                   </div>
                   
                   <p className="text-sm text-gray-700">
-                    {reviewSummaries[index] || (
+                    {reviewSummaries[index] ? (
+                      reviewSummaries[index]
+                    ) : (
                       <>
-                        <span className="text-xs text-muted-foreground">Generating AI summary...</span>
+                        <span className="text-xs text-muted-foreground">{t('generating_ai_summary')}</span>
                         <br />
                         {review.text.length > 100 ? `${review.text.substring(0, 100)}...` : review.text}
                       </>
@@ -316,7 +357,7 @@ const RestaurantDetails = () => {
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground">
                       <ThumbsUp className="w-3 h-3 mr-1" />
-                      <span>Helpful</span>
+                      <span>{t('helpful')}</span>
                     </div>
                   </div>
                 </div>

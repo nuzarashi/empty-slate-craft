@@ -1,18 +1,80 @@
 import type { Review } from '../types';
+import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
 
-// This is a sample implementation using a dummy approach
-// In a real app, this would call an AI service like OpenAI
+// Function to generate review summaries using OpenAI via Supabase Edge Function
 export const generateReviewSummary = async (reviews: Review[]): Promise<string> => {
-  // This is a dummy implementation
-  // In a real app, we would call an AI service to generate the summary
+  try {
+    if (reviews.length === 0) {
+      return "No reviews available.";
+    }
 
-  // Extract common keywords or phrases
-  const commonThemes = extractCommonThemes(reviews);
-  
-  // Create a summary based on review data
-  return createSummary(reviews, commonThemes);
+    // Call our Supabase Edge Function
+    const response = await fetch(`${SUPABASE_EDGE_FUNCTION_URL.replace('google-places-api', 'summarize-reviews')}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ reviews })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API error:', errorText);
+      throw new Error(`Failed to generate summary: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.error) {
+      console.error('API returned error:', data.error);
+      // Fall back to local summary if OpenAI fails
+      return createLocalSummary(reviews);
+    }
+
+    return data.summary;
+  } catch (err) {
+    console.error('Error generating AI summary:', err);
+    // Fall back to local summary if API call fails
+    return createLocalSummary(reviews);
+  }
 };
 
+// Local fallback summary generation if the API call fails
+const createLocalSummary = (reviews: Review[]): string => {
+  // For a single review, generate a concise summary
+  if (reviews.length === 1 && reviews[0].text) {
+    const reviewText = reviews[0].text;
+    
+    // Very simple summarization for fallback
+    if (reviewText.length <= 100) {
+      return reviewText;
+    }
+    
+    // For longer reviews, return the first sentence
+    const firstSentence = reviewText.split('.')[0];
+    return `${firstSentence}.`;
+  }
+
+  // For multiple reviews, calculate average rating
+  const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  
+  // Generate sentiment
+  let sentiment;
+  if (avgRating >= 4.5) {
+    sentiment = "Highly praised";
+  } else if (avgRating >= 4) {
+    sentiment = "Well-liked";
+  } else if (avgRating >= 3) {
+    sentiment = "Mixed reviews";
+  } else {
+    sentiment = "Generally disappointing";
+  }
+  
+  return `${sentiment} with an average rating of ${avgRating.toFixed(1)}/5.`;
+};
+
+// Helper function to extract common themes (simplified version of the original)
 const extractCommonThemes = (reviews: Review[]): string[] => {
   // This is a simplified implementation
   // In a real app, we would use NLP techniques to extract themes
@@ -74,113 +136,7 @@ const extractCommonThemes = (reviews: Review[]): string[] => {
     .slice(0, 5); // Top 5 themes
 };
 
-const createSummary = (reviews: Review[], themes: string[]): string => {
-  // For a single review, generate a concise summary
-  if (reviews.length === 1 && reviews[0].text) {
-    const reviewText = reviews[0].text;
-    
-    // Very simple summarization for demo purposes
-    // In a real app, this would be a call to an AI API
-    if (reviewText.length <= 100) {
-      return reviewText;
-    }
-    
-    // For longer reviews, create a simple summary
-    const firstSentence = reviewText.split('.')[0];
-    let summary = firstSentence;
-    
-    // Extract key phrases based on themes
-    themes.forEach(theme => {
-      const themeIndex = reviewText.toLowerCase().indexOf(theme);
-      if (themeIndex > -1) {
-        const start = Math.max(0, reviewText.lastIndexOf('.', themeIndex) + 1);
-        const end = reviewText.indexOf('.', themeIndex + theme.length) + 1;
-        if (end > start) {
-          const sentence = reviewText.substring(start, end).trim();
-          if (!summary.includes(sentence) && sentence.length > 10) {
-            summary += ' ' + sentence;
-          }
-        }
-      }
-    });
-    
-    // Add sentiment based on any keywords found
-    if (reviewText.toLowerCase().includes('recommend')) {
-      summary += " Recommends this restaurant.";
-    }
-    
-    return summary;
-  }
-
-  // For multiple reviews, calculate average rating
-  const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-  
-  // Generate sentiment
-  let sentiment;
-  if (avgRating >= 4.5) {
-    sentiment = "Highly praised";
-  } else if (avgRating >= 4) {
-    sentiment = "Well-liked";
-  } else if (avgRating >= 3) {
-    sentiment = "Mixed reviews";
-  } else {
-    sentiment = "Generally disappointing";
-  }
-  
-  // Generate summary based on themes
-  let themeText = "";
-  
-  if (themes.includes("delicious") || themes.includes("tasty")) {
-    themeText += "tasty food, ";
-  }
-  
-  if (themes.includes("fresh")) {
-    themeText += "fresh ingredients, ";
-  }
-  
-  if (themes.includes("atmosphere") || themes.includes("ambiance")) {
-    themeText += "nice atmosphere, ";
-  }
-  
-  if (themes.includes("service") || themes.includes("friendly") || themes.includes("staff")) {
-    themeText += "good service, ";
-  }
-  
-  if (themes.includes("expensive")) {
-    themeText += "on the pricey side, ";
-  }
-  
-  if (themes.includes("cheap") || themes.includes("value")) {
-    themeText += "good value, ";
-  }
-  
-  if (themes.includes("authentic")) {
-    themeText += "authentic cuisine, ";
-  }
-  
-  if (themes.includes("wait") || themes.includes("crowded")) {
-    themeText += "can get crowded, ";
-  }
-  
-  if (themes.includes("quiet")) {
-    themeText += "quiet dining experience, ";
-  }
-  
-  if (themes.includes("noisy")) {
-    themeText += "can be noisy, ";
-  }
-  
-  if (themes.includes("spicy")) {
-    themeText += "known for spicy options, ";
-  }
-  
-  // Remove trailing comma and space
-  themeText = themeText.trim().replace(/,$/, "");
-  
-  return `${sentiment} for ${themeText}.`;
-};
-
-// To implement OpenAI integration, you would use code like this:
+// Legacy code, kept for reference
 /*
 const generateReviewSummaryWithOpenAI = async (reviews: Review[]): Promise<string> => {
   try {
