@@ -4,6 +4,16 @@ export interface Location {
   lng: number;
 }
 
+export interface DietaryPreference {
+  vegan: boolean;
+  vegetarian: boolean;
+  glutenFree: boolean;
+  lowCarb: boolean;
+  noSeafood: boolean;
+  noRawFood: boolean;
+  halal: boolean;
+}
+
 export interface Restaurant {
   id: string;
   place_id?: string; // Added place_id for compatibility with Google API
@@ -28,6 +38,7 @@ export interface Restaurant {
   duration?: number; // Walking duration in seconds (added by our app)
   reviews?: Review[];
   reviewSummary?: string; // AI-generated summary (added by our app)
+  dietaryPreferences?: DietaryPreference; // Added dietary preferences
 }
 
 export interface Review {

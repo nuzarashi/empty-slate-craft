@@ -8,16 +8,8 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-
-type DietaryPreference = {
-  vegan: boolean;
-  vegetarian: boolean;
-  glutenFree: boolean;
-  lowCarb: boolean;
-  noSeafood: boolean;
-  noRawFood: boolean;
-  halal: boolean;
-};
+import { DietaryPreference } from '@/types';
+import { toast } from 'sonner';
 
 type PreferencesValues = {
   budget: number[];
@@ -36,6 +28,8 @@ const dietaryOptions = [
 ] as const;
 
 const LandingPage = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<PreferencesValues>({
     defaultValues: {
       budget: [1, 4], // Min and max budget
@@ -57,7 +51,14 @@ const LandingPage = () => {
 
   const handleSubmit = (data: PreferencesValues) => {
     console.log('Preferences:', data);
-    // This data would be passed to the restaurants page
+    setIsSubmitting(true);
+    
+    // Save preferences to localStorage to be accessed on restaurants page
+    localStorage.setItem('diningPreferences', JSON.stringify(data));
+    toast.success('Your preferences have been saved!');
+    
+    // Redirect happens via Link component
+    setIsSubmitting(false);
   };
 
   // Display budget as $ symbols
@@ -149,14 +150,15 @@ const LandingPage = () => {
                 </div>
               </div>
               
-              <Link to="/restaurants" className="w-full">
-                <Button 
-                  type="submit"
-                  className="w-full bg-food-orange hover:bg-food-red text-white rounded-full flex items-center justify-center gap-2"
-                >
+              <Button 
+                type="submit"
+                className="w-full bg-food-orange hover:bg-food-red text-white rounded-full flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+              >
+                <Link to="/restaurants" className="w-full flex items-center justify-center gap-2">
                   Find Restaurants <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </form>
           </Form>
           

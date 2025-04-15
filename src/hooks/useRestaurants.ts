@@ -1,6 +1,6 @@
 
-import { useState, useMemo, useCallback } from 'react';
-import type { Restaurant, FilterOptions, MealType, DietaryRestriction } from '../types';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import type { Restaurant, FilterOptions, MealType, DietaryRestriction, DietaryPreference } from '../types';
 
 const mealTypeKeywords: Record<MealType, string[]> = {
   main: ['restaurant', 'food', 'meal', 'dinner', 'lunch'],
@@ -24,6 +24,33 @@ const useRestaurants = (restaurants: Restaurant[]) => {
     open: false,
     minRating: 0
   });
+  
+  const [dietaryPreferences, setDietaryPreferences] = useState<DietaryPreference | null>(null);
+
+  // Load saved dietary preferences from localStorage
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem('diningPreferences');
+    if (savedPreferences) {
+      try {
+        const preferences = JSON.parse(savedPreferences);
+        if (preferences.dietary) {
+          setDietaryPreferences(preferences.dietary);
+        }
+        
+        // Also update price levels based on budget
+        if (preferences.budget && Array.isArray(preferences.budget) && preferences.budget.length === 2) {
+          const [min, max] = preferences.budget;
+          const priceLevels = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+          setFilters(prev => ({
+            ...prev,
+            priceLevel: priceLevels
+          }));
+        }
+      } catch (error) {
+        console.error("Error parsing saved preferences:", error);
+      }
+    }
+  }, []);
 
   const filteredRestaurants = useMemo(() => {
     return restaurants.filter(restaurant => {
@@ -56,7 +83,7 @@ const useRestaurants = (restaurants: Restaurant[]) => {
         }
       }
 
-      // Filter by dietary restrictions
+      // Filter by dietary restrictions from the filter menu
       if (filters.dietary !== 'none') {
         const dietaryKeywordList = dietaryKeywords[filters.dietary];
         const matchesDietary = restaurant.types.some(type => 
@@ -67,6 +94,23 @@ const useRestaurants = (restaurants: Restaurant[]) => {
         
         // Skip restaurants that don't match dietary requirements
         if (!matchesDietary) {
+          return false;
+        }
+      }
+      
+      // Filter by dietary preferences from preferences menu
+      if (dietaryPreferences) {
+        const hasRequiredDietary = Object.entries(dietaryPreferences).some(([key, isRequired]) => {
+          if (isRequired) {
+            const prefKey = key as keyof DietaryPreference;
+            return restaurant.dietaryPreferences && restaurant.dietaryPreferences[prefKey];
+          }
+          return false;
+        });
+        
+        // If we have dietary preferences set, only show restaurants that match at least one
+        const hasDietaryPreferences = Object.values(dietaryPreferences).some(value => value);
+        if (hasDietaryPreferences && !hasRequiredDietary) {
           return false;
         }
       }
@@ -85,7 +129,7 @@ const useRestaurants = (restaurants: Restaurant[]) => {
           return (a.distance || Infinity) - (b.distance || Infinity);
       }
     });
-  }, [restaurants, filters]);
+  }, [restaurants, filters, dietaryPreferences]);
 
   const updateFilters = useCallback((newFilters: Partial<FilterOptions>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -94,7 +138,9 @@ const useRestaurants = (restaurants: Restaurant[]) => {
   return {
     restaurants: filteredRestaurants,
     filters,
-    updateFilters
+    updateFilters,
+    dietaryPreferences,
+    setDietaryPreferences
   };
 };
 

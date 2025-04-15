@@ -26,6 +26,7 @@ const RestaurantDetails = () => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [reviewSort, setReviewSort] = useState<ReviewSortOption>('recent');
+  const [sortedReviews, setSortedReviews] = useState<Review[]>([]);
   const [reviewSummaries, setReviewSummaries] = useState<{[key: string]: string}>({});
   const [isGeneratingMainSummary, setIsGeneratingMainSummary] = useState<boolean>(false);
   const [categorySummary, setCategorySummary] = useState<CategorySummary | null>(null);
@@ -45,16 +46,19 @@ const RestaurantDetails = () => {
     );
   };
 
-  const getSortedReviews = () => {
-    if (!restaurant?.reviews) return [];
+  // Updated sorting function that now explicitly updates sortedReviews state
+  const updateSortedReviews = () => {
+    if (!restaurant?.reviews) return;
     
-    return [...restaurant.reviews].sort((a, b) => {
+    const reviews = [...restaurant.reviews].sort((a, b) => {
       if (reviewSort === 'recent') {
         return b.time - a.time; // Most recent first
       } else {
         return (b.rating * 10000 + b.time) - (a.rating * 10000 + a.time);
       }
     });
+    
+    setSortedReviews(reviews);
   };
 
   const getReviewSummary = async (reviewIndex: number, reviewText: string) => {
@@ -132,14 +136,19 @@ const RestaurantDetails = () => {
     }
   }, [language]);
 
+  // Update sortedReviews whenever restaurant data or sort option changes
   useEffect(() => {
-    if (restaurant?.reviews) {
-      const sortedReviews = getSortedReviews();
+    updateSortedReviews();
+  }, [restaurant?.reviews, reviewSort]);
+
+  // Generate review summaries for sorted reviews
+  useEffect(() => {
+    if (sortedReviews.length > 0) {
       sortedReviews.forEach((review, index) => {
         getReviewSummary(index, review.text);
       });
     }
-  }, [restaurant?.reviews, reviewSort, language]);
+  }, [sortedReviews, language]);
 
   if (loading) {
     return (
@@ -179,13 +188,10 @@ const RestaurantDetails = () => {
     opening_hours,
     distance,
     duration,
-    reviews
   } = restaurant;
   
   const priceDisplay = price_level ? '$'.repeat(price_level) : 'Unknown price';
   const priceClass = price_level ? `price-level-${price_level}` : '';
-
-  const sortedReviews = getSortedReviews();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -327,7 +333,7 @@ const RestaurantDetails = () => {
           </div>
         )}
         
-        {reviews && reviews.length > 0 && (
+        {restaurant.reviews && restaurant.reviews.length > 0 && (
           <div className="p-4">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-semibold">{t('reviews')}</h2>

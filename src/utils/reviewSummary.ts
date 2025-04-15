@@ -1,3 +1,4 @@
+
 import type { Review } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
 
@@ -52,14 +53,14 @@ export const generateReviewSummary = async (reviews: Review[], language: string 
   }
 };
 
-// Local fallback summary generation if the API call fails
+// Improved local fallback summary generation
 const createLocalSummary = (reviews: Review[], language: string = 'en'): CategorySummary => {
-  // For a single review, generate a concise summary
+  // For a single review, generate a more structured summary
   if (reviews.length === 1 && reviews[0].text) {
     const reviewText = reviews[0].text;
-    const foodKeywords = ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal', 'cuisine', 'menu'];
-    const atmosphereKeywords = ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise', 'setting', 'environment'];
-    const serviceKeywords = ['service', 'staff', 'server', 'waiter', 'waitress', 'host', 'hostess', 'friendly', 'attentive'];
+    const foodKeywords = ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal', 'cuisine', 'menu', 'appetizer', 'dessert', 'entree', 'drink', 'chef'];
+    const atmosphereKeywords = ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise', 'setting', 'environment', 'mood', 'quiet', 'loud', 'casual', 'formal', 'elegant', 'cozy'];
+    const serviceKeywords = ['service', 'staff', 'server', 'waiter', 'waitress', 'host', 'hostess', 'friendly', 'attentive', 'prompt', 'helpful', 'rude', 'slow', 'fast', 'efficient'];
     
     // Try to extract food, atmosphere, and service related sentences
     const sentences = reviewText.split(/[.!?]+/).filter(Boolean);
@@ -75,24 +76,32 @@ const createLocalSummary = (reviews: Review[], language: string = 'en'): Categor
     
     let summary = '';
     if (foodSentences.length > 0) {
-      summary += foodSentences[0] + '. ';
+      summary += foodSentences[0].trim() + '. ';
     }
     if (atmosphereSentences.length > 0) {
-      summary += atmosphereSentences[0] + '.';
+      summary += atmosphereSentences[0].trim() + '. ';
+    }
+    if (serviceSentences.length > 0) {
+      summary += serviceSentences[0].trim() + '.';
+    }
+    
+    // Make sure we have a summary even if no specific topics were found
+    if (!summary) {
+      summary = sentences[0].trim() + '.';
     }
     
     return {
       summary: summary.trim() || (language === 'ja' ? 'レビューの要約' : 'Review summary'),
-      cuisine: extractPhrase(foodSentences, 3) || (language === 'ja' ? '情報なし' : 'Not mentioned'),
-      atmosphere: extractPhrase(atmosphereSentences, 3) || (language === 'ja' ? '情報なし' : 'Not mentioned'),
-      service: extractPhrase(serviceSentences, 3) || (language === 'ja' ? '情報なし' : 'Not mentioned')
+      cuisine: extractPhrase(foodSentences, 3) || inferCuisine(reviewText) || (language === 'ja' ? '一般的な料理' : 'General cuisine'),
+      atmosphere: extractPhrase(atmosphereSentences, 3) || inferAtmosphere(reviewText) || (language === 'ja' ? '情報なし' : 'Not specified'),
+      service: extractPhrase(serviceSentences, 3) || inferService(reviewText) || (language === 'ja' ? '情報なし' : 'Not specified')
     };
   }
 
   // For multiple reviews, analyze food, atmosphere, and service mentions
-  const foodMentions = countKeywordMentions(reviews, ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal', 'cuisine', 'menu']);
-  const atmosphereMentions = countKeywordMentions(reviews, ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise', 'setting', 'environment']);
-  const serviceMentions = countKeywordMentions(reviews, ['service', 'staff', 'server', 'waiter', 'waitress', 'host', 'hostess', 'friendly', 'attentive']);
+  const foodMentions = countKeywordMentions(reviews, ['food', 'dish', 'taste', 'flavor', 'delicious', 'portion', 'meal', 'cuisine', 'menu', 'appetizer', 'dessert', 'entree']);
+  const atmosphereMentions = countKeywordMentions(reviews, ['atmosphere', 'ambiance', 'decor', 'interior', 'vibe', 'music', 'noise', 'setting', 'environment', 'mood', 'quiet', 'loud', 'casual', 'formal']);
+  const serviceMentions = countKeywordMentions(reviews, ['service', 'staff', 'server', 'waiter', 'waitress', 'host', 'hostess', 'friendly', 'attentive', 'prompt', 'helpful']);
   
   // Generate sentiment
   const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
@@ -127,6 +136,9 @@ const createLocalSummary = (reviews: Review[], language: string = 'en'): Categor
   // Extract cuisine type
   const cuisineType = extractCuisineType(reviews) || (language === 'ja' ? '一般的な料理' : 'General cuisine');
   
+  // Extract atmosphere attributes
+  const atmosphereType = extractAtmosphereType(reviews) || (language === 'ja' ? '一般的な' : 'General');
+  
   const summary = language === 'ja'
     ? `料理の質は${foodSentiment}で、雰囲気は${atmosphereSentiment}です。平均評価は${avgRating.toFixed(1)}/5です。`
     : `Food quality is ${foodSentiment} and atmosphere is ${atmosphereSentiment} with an average rating of ${avgRating.toFixed(1)}/5.`;
@@ -134,7 +146,7 @@ const createLocalSummary = (reviews: Review[], language: string = 'en'): Categor
   return {
     summary,
     cuisine: cuisine(cuisineType, foodSentiment, language),
-    atmosphere: language === 'ja' ? `${atmosphereSentiment}雰囲気` : `${atmosphereSentiment} atmosphere`,
+    atmosphere: language === 'ja' ? `${atmosphereType}な雰囲気` : `${atmosphereType} atmosphere`,
     service: language === 'ja' ? `${serviceSentiment}サービス` : `${serviceSentiment} service`
   };
 };
@@ -165,12 +177,15 @@ const extractPhrase = (sentences: string[], maxWords: number): string => {
   return words.slice(0, maxWords).join(' ') + '...';
 };
 
-// Helper function to try to determine cuisine type
+// Improved helper function to try to determine cuisine type
 const extractCuisineType = (reviews: Review[]): string => {
   const cuisineTypes = [
     'italian', 'japanese', 'chinese', 'mexican', 'thai', 'indian', 'french', 
     'greek', 'american', 'korean', 'vietnamese', 'mediterranean', 'spanish', 
-    'turkish', 'middle eastern', 'brazilian', 'peruvian', 'ethiopian', 'fusion'
+    'turkish', 'middle eastern', 'brazilian', 'peruvian', 'ethiopian', 'fusion',
+    'sushi', 'pizza', 'burger', 'steak', 'seafood', 'vegetarian', 'vegan', 
+    'gluten-free', 'healthy', 'fast food', 'fine dining', 'café', 'bakery',
+    'brunch', 'breakfast', 'lunch', 'dinner', 'dessert', 'ice cream'
   ];
   
   // Count mentions of cuisine types
@@ -200,6 +215,42 @@ const extractCuisineType = (reviews: Review[]): string => {
   return mostMentioned ? mostMentioned.charAt(0).toUpperCase() + mostMentioned.slice(1) : '';
 };
 
+// New helper function to extract atmosphere type
+const extractAtmosphereType = (reviews: Review[]): string => {
+  const atmosphereTypes = [
+    'casual', 'elegant', 'upscale', 'fancy', 'cozy', 'intimate', 'romantic', 
+    'family-friendly', 'loud', 'quiet', 'vibrant', 'lively', 'relaxed', 'trendy',
+    'hip', 'modern', 'traditional', 'rustic', 'chic', 'vintage', 'fine dining',
+    'fast casual', 'outdoor', 'rooftop', 'waterfront', 'view', 'hidden gem'
+  ];
+  
+  // Count mentions of atmosphere types
+  const atmosphereCounts: Record<string, number> = {};
+  
+  reviews.forEach(review => {
+    const text = review.text.toLowerCase();
+    
+    atmosphereTypes.forEach(type => {
+      if (text.includes(type)) {
+        atmosphereCounts[type] = (atmosphereCounts[type] || 0) + 1;
+      }
+    });
+  });
+  
+  // Find most mentioned atmosphere type
+  let mostMentioned = '';
+  let highestCount = 0;
+  
+  Object.entries(atmosphereCounts).forEach(([type, count]) => {
+    if (count > highestCount) {
+      highestCount = count;
+      mostMentioned = type;
+    }
+  });
+  
+  return mostMentioned ? mostMentioned.charAt(0).toUpperCase() + mostMentioned.slice(1) : 'Casual';
+};
+
 // Create a cuisine description
 const cuisine = (type: string, quality: string, language: string): string => {
   if (language === 'ja') {
@@ -215,48 +266,50 @@ const cuisine = (type: string, quality: string, language: string): string => {
   }
 };
 
-// Legacy code, kept for reference
-/*
-const generateReviewSummaryWithOpenAI = async (reviews: Review[]): Promise<string> => {
-  try {
-    // Prepare the review texts
-    const reviewTexts = reviews.map(review => `"${review.text}" (Rating: ${review.rating}/5)`).join("\n\n");
-    
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini', // or any other suitable model
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that summarizes restaurant reviews concisely in 1-2 sentences. Highlight the key sentiments and most mentioned aspects like food quality, service, ambiance, etc.'
-          },
-          {
-            role: 'user',
-            content: `Summarize these restaurant reviews in 1-2 concise sentences:\n\n${reviewTexts}`
-          }
-        ],
-        max_tokens: 100,
-        temperature: 0.7
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error('OpenAI API error:', data.error);
-      return 'Could not generate summary due to an error.';
-    }
-    
-    return data.choices[0].message.content.trim();
-  } catch (error) {
-    console.error('Error generating AI summary:', error);
-    return 'Could not generate summary.';
-  }
+// Infer cuisine from text when no explicit mention is found
+const inferCuisine = (text: string): string => {
+  const lowerText = text.toLowerCase();
+  
+  if (/pasta|pizza|italian|lasagna|risotto|gelato/i.test(lowerText)) return 'Italian';
+  if (/sushi|ramen|japanese|tempura|sashimi|teriyaki/i.test(lowerText)) return 'Japanese';
+  if (/taco|burrito|mexican|enchilada|quesadilla|salsa/i.test(lowerText)) return 'Mexican';
+  if (/curry|indian|naan|tikka|masala|samosa/i.test(lowerText)) return 'Indian';
+  if (/stir-fry|chinese|dimsum|dumpling|wonton|spring roll/i.test(lowerText)) return 'Chinese';
+  if (/burger|fries|american|sandwich|steak|bbq/i.test(lowerText)) return 'American';
+  if (/hummus|falafel|mediterranean|kebab|shawarma|pita/i.test(lowerText)) return 'Mediterranean';
+  
+  // Default fallback
+  return 'Local cuisine';
 };
-*/
+
+// Infer atmosphere from text when no explicit mention is found
+const inferAtmosphere = (text: string): string => {
+  const lowerText = text.toLowerCase();
+  
+  if (/fancy|elegant|upscale|classy|sophisticated|luxury/i.test(lowerText)) return 'Elegant';
+  if (/casual|relaxed|laid-back|chill|informal/i.test(lowerText)) return 'Casual';
+  if (/cozy|intimate|warm|comfortable|homey/i.test(lowerText)) return 'Cozy';
+  if (/noisy|loud|busy|crowded|energetic|vibrant/i.test(lowerText)) return 'Lively';
+  if (/quiet|peaceful|calm|tranquil|serene/i.test(lowerText)) return 'Quiet';
+  if (/modern|trendy|hip|stylish|chic/i.test(lowerText)) return 'Modern';
+  if (/traditional|authentic|classic|old-school/i.test(lowerText)) return 'Traditional';
+  if (/family|kid|child/i.test(lowerText)) return 'Family-friendly';
+  
+  // Default fallback
+  return 'Casual';
+};
+
+// Infer service from text when no explicit mention is found
+const inferService = (text: string): string => {
+  const lowerText = text.toLowerCase();
+  
+  if (/friendly|welcoming|kind|nice|pleasant/i.test(lowerText)) return 'Friendly';
+  if (/attentive|helpful|responsive|efficient/i.test(lowerText)) return 'Attentive';
+  if (/slow|waited|long time|forever/i.test(lowerText)) return 'Slow';
+  if (/fast|quick|speedy|prompt|rapid/i.test(lowerText)) return 'Quick';
+  if (/rude|unfriendly|impolite|disrespectful/i.test(lowerText)) return 'Unfriendly';
+  if (/professional|polished|courteous/i.test(lowerText)) return 'Professional';
+  
+  // Default fallback
+  return 'Standard';
+};

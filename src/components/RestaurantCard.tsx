@@ -62,10 +62,12 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
   // Functions to handle carousel navigation - must prevent event bubbling
+  // Fixed by ensuring we return false to stop event propagation
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
+    return false;
   };
 
   const prevImage = (e: React.MouseEvent) => {
@@ -74,6 +76,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
     setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
     );
+    return false;
   };
   
   // Create the restaurant detail route link with the proper ID
@@ -82,7 +85,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   
   return (
     <div className="relative"> {/* Wrap card in relative div for z-index isolation */}
-      <Link to={detailLink}>
+      <Link to={detailLink} className="block">
         <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 bg-white border-0">
           <div className="relative h-80 overflow-hidden">
             {/* Instagram-style carousel with dots and side-swipe navigation */}
@@ -94,39 +97,43 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
               />
               
               {/* Navigation arrows - these need onClick handlers to prevent event bubbling */}
-              <button 
-                onClick={prevImage} 
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              
-              <button 
-                onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
-                aria-label="Next image"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-              
-              {/* Instagram-style dot indicators */}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
-                {imageUrls.map((_, index) => (
-                  <div 
-                    key={index} 
-                    className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
-                    aria-label={`Go to image ${index+1}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => { 
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setCurrentIndex(index); 
-                    }}
-                  ></div>
-                ))}
-              </div>
+              {imageUrls.length > 1 && (
+                <>
+                  <button 
+                    onClick={prevImage} 
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  
+                  <button 
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                  
+                  {/* Instagram-style dot indicators */}
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
+                    {imageUrls.map((_, index) => (
+                      <div 
+                        key={index} 
+                        className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
+                        aria-label={`Go to image ${index+1}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => { 
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCurrentIndex(index); 
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             
             {opening_hours?.open_now !== undefined && (
