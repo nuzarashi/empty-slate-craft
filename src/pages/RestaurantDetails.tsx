@@ -46,7 +46,12 @@ const RestaurantDetails = () => {
     );
   };
 
-  // Updated sorting function that now explicitly updates sortedReviews state
+  // Handle sort change explicitly
+  const handleSortChange = (value: string) => {
+    setReviewSort(value as ReviewSortOption);
+  };
+
+  // Updated sorting function
   const updateSortedReviews = () => {
     if (!restaurant?.reviews) return;
     
@@ -306,7 +311,7 @@ const RestaurantDetails = () => {
               </div>
             ) : categorySummary && (
               <>
-                <p className="text-gray-700 mb-4">{categorySummary.summary}</p>
+                {/* No general summary to avoid conflicting with bullet points */}
                 
                 <ul className="space-y-3">
                   <li className="flex items-start">
@@ -339,7 +344,7 @@ const RestaurantDetails = () => {
               <h2 className="text-lg font-semibold">{t('reviews')}</h2>
               <Select
                 value={reviewSort}
-                onValueChange={(value: string) => setReviewSort(value as ReviewSortOption)}
+                onValueChange={handleSortChange}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder={t('sort_reviews_by')} />

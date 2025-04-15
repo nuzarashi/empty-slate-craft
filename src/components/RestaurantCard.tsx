@@ -62,12 +62,10 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
   // Functions to handle carousel navigation - must prevent event bubbling
-  // Fixed by ensuring we return false to stop event propagation
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
-    return false;
   };
 
   const prevImage = (e: React.MouseEvent) => {
@@ -76,7 +74,6 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
     setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
     );
-    return false;
   };
   
   // Create the restaurant detail route link with the proper ID
@@ -96,7 +93,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
                 className="w-full h-full object-cover"
               />
               
-              {/* Navigation arrows - these need onClick handlers to prevent event bubbling */}
+              {/* Navigation arrows - these need onClick handlers that prevent event bubbling */}
               {imageUrls.length > 1 && (
                 <>
                   <button 

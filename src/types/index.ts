@@ -62,3 +62,10 @@ export interface FilterOptions {
   open: boolean; // Only show open restaurants
   minRating: number; // Minimum star rating (1-5)
 }
+
+export interface CategorySummary {
+  summary: string;
+  cuisine: string;
+  atmosphere: string;
+  service: string;
+}
