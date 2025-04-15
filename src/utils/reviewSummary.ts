@@ -1,13 +1,6 @@
-
 import type { Review } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
-
-export interface CategorySummary {
-  summary: string;
-  cuisine: string;
-  atmosphere: string;
-  service: string;
-}
+import { CategorySummary } from '../types';
 
 // Function to generate review summaries using OpenAI via Supabase Edge Function
 export const generateReviewSummary = async (reviews: Review[], language: string = 'en'): Promise<CategorySummary> => {
@@ -21,31 +14,39 @@ export const generateReviewSummary = async (reviews: Review[], language: string 
       };
     }
 
+    console.log(`Generating review summary in language: ${language}`);
+
     // Call our Supabase Edge Function
-    const response = await fetch(`${SUPABASE_EDGE_FUNCTION_URL.replace('google-places-api', 'summarize-reviews')}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({ reviews, language })
-    });
+    try {
+      const response = await fetch(`${SUPABASE_EDGE_FUNCTION_URL.replace('google-places-api', 'summarize-reviews')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ reviews, language })
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error:', errorText);
-      throw new Error(`Failed to generate summary: ${response.status} ${response.statusText}`);
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error:', errorText);
+        throw new Error(`Failed to generate summary: ${response.status} ${response.statusText}`);
+      }
 
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error('API returned error:', data.error);
-      // Fall back to local summary if OpenAI fails
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error('API returned error:', data.error);
+        // Fall back to local summary if OpenAI fails
+        return createLocalSummary(reviews, language);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error calling Supabase Edge Function:', error);
+      // Fall back to local summary if API call fails
       return createLocalSummary(reviews, language);
     }
-
-    return data;
   } catch (err) {
     console.error('Error generating AI summary:', err);
     // Fall back to local summary if API call fails
@@ -91,7 +92,7 @@ const createLocalSummary = (reviews: Review[], language: string = 'en'): Categor
     }
     
     return {
-      summary: summary.trim() || (language === 'ja' ? 'レビューの要約' : 'Review summary'),
+      summary: summary.trim() || (language === 'ja' ? 'レビューの要��' : 'Review summary'),
       cuisine: extractPhrase(foodSentences, 3) || inferCuisine(reviewText) || (language === 'ja' ? '一般的な料理' : 'General cuisine'),
       atmosphere: extractPhrase(atmosphereSentences, 3) || inferAtmosphere(reviewText) || (language === 'ja' ? '情報なし' : 'Not specified'),
       service: extractPhrase(serviceSentences, 3) || inferService(reviewText) || (language === 'ja' ? '情報なし' : 'Not specified')

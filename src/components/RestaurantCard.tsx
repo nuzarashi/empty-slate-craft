@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,19 +62,19 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
   // Functions to handle carousel navigation - must prevent event bubbling
-  const nextImage = (e: React.MouseEvent) => {
+  const nextImage = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
-  };
+  }, [imageUrls.length]);
 
-  const prevImage = (e: React.MouseEvent) => {
+  const prevImage = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
     );
-  };
+  }, [imageUrls.length]);
   
   // Create the restaurant detail route link with the proper ID
   // If place_id exists, use it prefixed with "place_id:"

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner'; 
 import { LanguageContext, Language, translations } from './LanguageSelector';
 
 interface LanguageProviderProps {
@@ -21,10 +22,26 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   // Update document language when language changes
   useEffect(() => {
     document.documentElement.lang = language;
+    
+    // Log when language changes to help with debugging
+    console.log('Language changed to:', language);
+
+    // Notify users when language changes
+    toast.success(language === 'en' ? 'Language changed to English' : '言語が日本語に変更されました');
   }, [language]);
 
+  // Set language method with additional safety
+  const setAppLanguage = (newLanguage: Language) => {
+    if (newLanguage === 'en' || newLanguage === 'ja') {
+      setLanguage(newLanguage);
+    } else {
+      console.error('Invalid language selected:', newLanguage);
+      setLanguage('en'); // Default to English on invalid selection
+    }
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage: setAppLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );

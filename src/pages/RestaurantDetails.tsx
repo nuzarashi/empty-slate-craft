@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Star, MapPin, Clock, ExternalLink, ChevronLeft, ChevronRight, ThumbsUp, Utensils, Music, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,14 +47,16 @@ const RestaurantDetails = () => {
   };
 
   // Handle sort change explicitly
-  const handleSortChange = (value: string) => {
+  const handleSortChange = useCallback((value: string) => {
+    console.log("Sorting changed to:", value);
     setReviewSort(value as ReviewSortOption);
-  };
+  }, []);
 
-  // Updated sorting function
-  const updateSortedReviews = () => {
+  // Updated sorting function with memoization to prevent unnecessary calculations
+  const updateSortedReviews = useCallback(() => {
     if (!restaurant?.reviews) return;
     
+    console.log("Updating sorted reviews with sort option:", reviewSort);
     const reviews = [...restaurant.reviews].sort((a, b) => {
       if (reviewSort === 'recent') {
         return b.time - a.time; // Most recent first
@@ -63,8 +65,9 @@ const RestaurantDetails = () => {
       }
     });
     
+    console.log("Sorted reviews:", reviews.map(r => r.author_name));
     setSortedReviews(reviews);
-  };
+  }, [restaurant?.reviews, reviewSort]);
 
   const getReviewSummary = async (reviewIndex: number, reviewText: string) => {
     if (reviewSummaries[reviewIndex] || !reviewText) return;
@@ -138,13 +141,20 @@ const RestaurantDetails = () => {
   useEffect(() => {
     if (restaurant?.reviews && restaurant.reviews.length > 0) {
       generateAllReviewsSummary(restaurant.reviews);
+      // Clear existing review summaries to regenerate them in the new language
+      setReviewSummaries({});
     }
+  }, [language, restaurant?.reviews]);
+
+  // Reset review summaries when language changes
+  useEffect(() => {
+    setReviewSummaries({});
   }, [language]);
 
   // Update sortedReviews whenever restaurant data or sort option changes
   useEffect(() => {
     updateSortedReviews();
-  }, [restaurant?.reviews, reviewSort]);
+  }, [restaurant?.reviews, reviewSort, updateSortedReviews]);
 
   // Generate review summaries for sorted reviews
   useEffect(() => {
