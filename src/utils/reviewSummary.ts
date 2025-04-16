@@ -314,3 +314,6 @@ const inferService = (text: string): string => {
   // Default fallback
   return 'Standard';
 };
+
+// Re-export CategorySummary for convenience
+export { CategorySummary };
