@@ -1,7 +1,6 @@
 
-import React from 'react';
-import { Star, ThumbsUp } from 'lucide-react';
-import { useContext } from 'react';
+import React, { useState, useContext } from 'react';
+import { Star, ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { LanguageContext } from '@/components/LanguageSelector';
 import type { Review } from '@/types';
 
@@ -13,6 +12,34 @@ interface ReviewItemProps {
 
 const ReviewItem = ({ review, index, reviewSummary }: ReviewItemProps) => {
   const { t } = useContext(LanguageContext);
+  const [expanded, setExpanded] = useState(false);
+  
+  // Character limit for collapsed view
+  const TEXT_LIMIT = 100;
+  
+  // Determine if review needs a "Read more" button
+  const isLongReview = reviewSummary 
+    ? reviewSummary.length > TEXT_LIMIT 
+    : review.text.length > TEXT_LIMIT;
+  
+  // Get display text based on expansion state
+  const getDisplayText = () => {
+    if (reviewSummary) {
+      return expanded || !isLongReview 
+        ? reviewSummary 
+        : `${reviewSummary.substring(0, TEXT_LIMIT)}...`;
+    } else {
+      return (
+        <>
+          <span className="text-xs text-muted-foreground">{t('generating_ai_summary')}</span>
+          <br />
+          {expanded || !isLongReview 
+            ? review.text 
+            : `${review.text.substring(0, TEXT_LIMIT)}...`}
+        </>
+      );
+    }
+  };
 
   return (
     <div className="bg-white p-3 rounded-lg shadow-sm">
@@ -30,17 +57,26 @@ const ReviewItem = ({ review, index, reviewSummary }: ReviewItemProps) => {
         </div>
       </div>
       
-      <p className="text-sm text-gray-700">
-        {reviewSummary ? (
-          reviewSummary
-        ) : (
-          <>
-            <span className="text-xs text-muted-foreground">{t('generating_ai_summary')}</span>
-            <br />
-            {review.text.length > 100 ? `${review.text.substring(0, 100)}...` : review.text}
-          </>
-        )}
-      </p>
+      <div className="text-sm text-gray-700">
+        {getDisplayText()}
+      </div>
+      
+      {isLongReview && (
+        <button 
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center mt-1 text-xs text-primary hover:underline"
+        >
+          {expanded ? (
+            <>
+              {t('show_less')} <ChevronUp className="w-3 h-3 ml-1" />
+            </>
+          ) : (
+            <>
+              {t('read_more')} <ChevronDown className="w-3 h-3 ml-1" />
+            </>
+          )}
+        </button>
+      )}
       
       <div className="flex justify-between items-center mt-1">
         <div className="text-xs text-muted-foreground">
