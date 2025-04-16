@@ -315,5 +315,5 @@ const inferService = (text: string): string => {
   return 'Standard';
 };
 
-// Re-export CategorySummary for convenience
-export { CategorySummary };
+// Correctly re-export CategorySummary using export type
+export type { CategorySummary };
