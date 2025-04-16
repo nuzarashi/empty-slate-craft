@@ -1,4 +1,3 @@
-
 import type { Review } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
 
@@ -344,6 +343,3 @@ const inferService = (text: string): string => {
   // Default fallback
   return 'Standard';
 };
-
-// Correctly re-export CategorySummary using export type
-export type { CategorySummary };
