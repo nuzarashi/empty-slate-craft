@@ -1,8 +1,8 @@
 
 import { useState, useCallback, useEffect, useContext } from 'react';
-import { generateReviewSummary } from '@/utils/reviewSummary';
+import { generateReviewSummary } from '@/utils/review';
 import type { Review, ReviewSortOption, Restaurant } from '@/types';
-import type { CategorySummary } from '@/utils/reviewSummary';
+import type { CategorySummary } from '@/utils/review/types';
 import { LanguageContext } from '@/components/LanguageSelector';
 
 interface UseReviewHandlingProps {

@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Utensils, Music, User } from 'lucide-react';
 import { useContext } from 'react';
 import { LanguageContext } from '@/components/LanguageSelector';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import type { CategorySummary } from '@/utils/reviewSummary';
+import type { CategorySummary } from '@/utils/review/types';
 
 interface ReviewSummaryProps {
   categorySummary: CategorySummary | null;
