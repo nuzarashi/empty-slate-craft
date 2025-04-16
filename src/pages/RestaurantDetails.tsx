@@ -51,14 +51,22 @@ const RestaurantDetails = () => {
   // Handle sort change explicitly - now also refetches restaurant details with new sort
   const handleSortChange = useCallback(async (value: string) => {
     console.log("Sorting changed to:", value);
+    
+    if (value === reviewSort) {
+      console.log("Sort value unchanged, skipping refetch");
+      return;
+    }
+    
     setReviewSort(value as ReviewSortOption);
     setIsLoadingNewReviews(true);
     
     if (id) {
       try {
+        console.log("Fetching new reviews with sort:", value);
         // Pass the review sort option to fetch appropriate reviews
-        const details = await fetchRestaurantDetails(id, value);
+        const details = await fetchRestaurantDetails(id, value as ReviewSortOption);
         if (details) {
+          console.log("New details fetched successfully:", details);
           setRestaurant(details);
           // Clear existing review summaries to regenerate them
           setReviewSummaries({});
@@ -74,7 +82,7 @@ const RestaurantDetails = () => {
         setIsLoadingNewReviews(false);
       }
     }
-  }, [id, fetchRestaurantDetails]);
+  }, [id, fetchRestaurantDetails, reviewSort]);
 
   // Updated sorting function with memoization to prevent unnecessary calculations
   const updateSortedReviews = useCallback(() => {
@@ -89,7 +97,7 @@ const RestaurantDetails = () => {
       }
     });
     
-    console.log("Sorted reviews:", reviews.map(r => r.author_name));
+    console.log("Sorted reviews count:", reviews.length);
     setSortedReviews(reviews);
   }, [restaurant?.reviews, reviewSort]);
 
@@ -105,6 +113,7 @@ const RestaurantDetails = () => {
     
     // If UI language is Japanese but review is already in Japanese, use the original
     if (language === 'ja' && isJapaneseText(reviewText)) {
+      console.log("Review is already in Japanese, skipping translation for index:", reviewIndex);
       setReviewSummaries(prev => ({
         ...prev,
         [reviewIndex]: reviewText
@@ -150,10 +159,11 @@ const RestaurantDetails = () => {
       if (!id) return;
       setLoading(true);
       try {
-        console.log("Fetching restaurant details for ID:", id);
+        console.log("Fetching restaurant details for ID:", id, "with sort:", reviewSort);
         // Pass the current review sort option
         const details = await fetchRestaurantDetails(id, reviewSort);
         if (details) {
+          console.log("Restaurant details loaded:", details.name, "with", details.reviews?.length || 0, "reviews");
           setRestaurant(details);
           
           if (details.photos && details.photos.length > 0) {
@@ -200,6 +210,7 @@ const RestaurantDetails = () => {
   // Generate review summaries for sorted reviews
   useEffect(() => {
     if (sortedReviews.length > 0) {
+      console.log("Generating summaries for", sortedReviews.length, "sorted reviews");
       sortedReviews.forEach((review, index) => {
         getReviewSummary(index, review.text);
       });

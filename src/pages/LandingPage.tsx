@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { useForm } from 'react-hook-form';
 import { DietaryPreference } from '@/types';
 import { toast } from 'sonner';
+import { LanguageContext } from '@/components/LanguageSelector';
 
 type PreferencesValues = {
   budget: number[];
@@ -18,17 +19,18 @@ type PreferencesValues = {
 };
 
 const dietaryOptions = [
-  { id: 'vegan', label: 'Vegan' },
-  { id: 'vegetarian', label: 'Vegetarian' },
-  { id: 'glutenFree', label: 'Gluten Free' },
-  { id: 'lowCarb', label: 'Low Carb' },
-  { id: 'noSeafood', label: 'No Seafood' },
-  { id: 'noRawFood', label: 'No Raw Food' },
-  { id: 'halal', label: 'Halal' },
+  { id: 'vegan', label: 'vegan' },
+  { id: 'vegetarian', label: 'vegetarian' },
+  { id: 'glutenFree', label: 'gluten_free' },
+  { id: 'lowCarb', label: 'low_carb' },
+  { id: 'noSeafood', label: 'no_seafood' },
+  { id: 'noRawFood', label: 'no_raw_food' },
+  { id: 'halal', label: 'halal' },
 ] as const;
 
 const LandingPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useContext(LanguageContext);
   
   const form = useForm<PreferencesValues>({
     defaultValues: {
@@ -55,7 +57,7 @@ const LandingPage = () => {
     
     // Save preferences to localStorage to be accessed on restaurants page
     localStorage.setItem('diningPreferences', JSON.stringify(data));
-    toast.success('Your preferences have been saved!');
+    toast.success(t('preferences_saved'));
     
     // Redirect happens via Link component
     setIsSubmitting(false);
@@ -71,9 +73,9 @@ const LandingPage = () => {
       
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
         <div className="max-w-md w-full space-y-6 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl">
-          <h1 className="text-3xl font-bold font-display text-food-dark">What to Eat</h1>
+          <h1 className="text-3xl font-bold font-display text-food-dark">{t('what_to_eat')}</h1>
           <p className="text-food-dark/80">
-            Discover delicious restaurants nearby based on your preferences and location.
+            {t('discover_restaurants')}
           </p>
           
           <Form {...form}>
@@ -84,7 +86,7 @@ const LandingPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex justify-between">
-                      <span>Budget Range</span>
+                      <span>{t('budget_range')}</span>
                       <span className="font-medium">{minBudgetDisplay} - {maxBudgetDisplay}</span>
                     </FormLabel>
                     <FormControl>
@@ -107,8 +109,8 @@ const LandingPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex justify-between">
-                      <span>Max Walking Distance</span>
-                      <span className="font-medium">{field.value[0]} min</span>
+                      <span>{t('max_walking_distance')}</span>
+                      <span className="font-medium">{field.value[0]} {t('min')}</span>
                     </FormLabel>
                     <FormControl>
                       <Slider 
@@ -125,7 +127,7 @@ const LandingPage = () => {
               />
               
               <div className="space-y-3">
-                <FormLabel>Dietary Preferences</FormLabel>
+                <FormLabel>{t('dietary_preferences')}</FormLabel>
                 <div className="grid grid-cols-2 gap-2">
                   {dietaryOptions.map((option) => (
                     <FormField
@@ -141,7 +143,7 @@ const LandingPage = () => {
                             />
                           </FormControl>
                           <FormLabel className="text-sm font-normal">
-                            {option.label}
+                            {t(option.label)}
                           </FormLabel>
                         </FormItem>
                       )}
@@ -156,14 +158,14 @@ const LandingPage = () => {
                 disabled={isSubmitting}
               >
                 <Link to="/restaurants" className="w-full flex items-center justify-center gap-2">
-                  Find Restaurants <ArrowRight className="w-4 h-4" />
+                  {t('find_restaurants')} <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
             </form>
           </Form>
           
           <p className="text-xs text-muted-foreground">
-            This app will request your location to find nearby restaurants
+            {t('location_permission')}
           </p>
         </div>
       </main>

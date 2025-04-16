@@ -64,19 +64,26 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
   // Functions to handle carousel navigation - must prevent event bubbling
-  const nextImage = useCallback((e: React.MouseEvent) => {
+  const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
-  }, [imageUrls.length]);
+  };
 
-  const prevImage = useCallback((e: React.MouseEvent) => {
+  const prevImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
     );
-  }, [imageUrls.length]);
+  };
+  
+  // Handle dot indicator click
+  const goToImage = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex(index);
+  };
   
   // Create the restaurant detail route link with the proper ID
   // If place_id exists, use it prefixed with "place_id:"
@@ -95,13 +102,14 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
                 className="w-full h-full object-cover"
               />
               
-              {/* Navigation arrows - these need onClick handlers that prevent event bubbling */}
+              {/* Navigation arrows - simplified handlers */}
               {imageUrls.length > 1 && (
                 <>
                   <button 
                     onClick={prevImage} 
                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
                     aria-label="Previous image"
+                    type="button"
                   >
                     <ChevronLeft className="w-6 h-6" />
                   </button>
@@ -110,6 +118,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
                     onClick={nextImage}
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
                     aria-label="Next image"
+                    type="button"
                   >
                     <ChevronRight className="w-6 h-6" />
                   </button>
@@ -117,18 +126,13 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
                   {/* Instagram-style dot indicators */}
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
                     {imageUrls.map((_, index) => (
-                      <div 
+                      <button 
                         key={index} 
                         className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
                         aria-label={`Go to image ${index+1}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => { 
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setCurrentIndex(index); 
-                        }}
-                      ></div>
+                        onClick={(e) => goToImage(index, e)}
+                        type="button"
+                      />
                     ))}
                   </div>
                 </>

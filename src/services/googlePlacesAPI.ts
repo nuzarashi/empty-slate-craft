@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import type { Location, Restaurant } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
@@ -104,7 +105,7 @@ export const fetchRestaurantDetails = async (restaurantId: string, reviewSort: s
         fields: 'name,rating,vicinity,user_ratings_total,price_level,photos,geometry,opening_hours,reviews',
         apiKey: GOOGLE_API_KEY,
         reviewSort: reviewSort,
-        reviewCount: 5
+        reviewCount: 5 // Explicitly request 5 reviews
       })
     });
     
