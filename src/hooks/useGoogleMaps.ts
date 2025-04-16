@@ -106,12 +106,12 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
     }
   }, [location]);
 
-  const fetchRestaurantDetails = useCallback(async (restaurantId: string) => {
+  const fetchRestaurantDetails = useCallback(async (restaurantId: string, reviewSort?: string) => {
     try {
-      console.log("Fetching details for restaurant ID:", restaurantId);
+      console.log("Fetching details for restaurant ID:", restaurantId, "with sort:", reviewSort);
       // Use place_id if available, otherwise fall back to id
       const placeId = restaurantId.includes("place_id:") ? restaurantId.replace("place_id:", "") : restaurantId;
-      const details = await getRestaurantDetails(placeId);
+      const details = await getRestaurantDetails(placeId, reviewSort);
       
       if (details) {
         // Add dietary preferences to the restaurant details

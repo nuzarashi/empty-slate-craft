@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Restaurant } from '../types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
+import { LanguageContext } from '@/components/LanguageSelector';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -26,6 +27,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
     duration,
   } = restaurant;
   
+  const { t } = useContext(LanguageContext);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   
@@ -136,7 +138,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
             {opening_hours?.open_now !== undefined && (
               <div className="absolute top-2 right-2 z-10">
                 <Badge variant={opening_hours.open_now ? "default" : "secondary"}>
-                  {opening_hours.open_now ? 'Open Now' : 'Closed'}
+                  {opening_hours.open_now ? t('open_now') : t('closed')}
                 </Badge>
               </div>
             )}

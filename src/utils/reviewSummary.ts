@@ -1,6 +1,21 @@
+
 import type { Review } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
-import { CategorySummary } from '../types';
+
+// Define the CategorySummary type
+export interface CategorySummary {
+  summary: string;
+  cuisine: string;
+  atmosphere: string;
+  service: string;
+}
+
+// Helper function to detect if text is Japanese
+const isJapaneseText = (text: string): boolean => {
+  // Check for Japanese characters (Hiragana, Katakana, Kanji)
+  const japaneseRegex = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]/;
+  return japaneseRegex.test(text);
+};
 
 // Function to generate review summaries using OpenAI via Supabase Edge Function
 export const generateReviewSummary = async (reviews: Review[], language: string = 'en'): Promise<CategorySummary> => {
@@ -16,6 +31,17 @@ export const generateReviewSummary = async (reviews: Review[], language: string 
 
     console.log(`Generating review summary in language: ${language}`);
 
+    // Process reviews to respect the original language for Japanese reviews
+    const processedReviews = reviews.map(review => {
+      // If the UI language is set to Japanese but the review is already in Japanese, 
+      // mark it to not be translated
+      const isJapanese = isJapaneseText(review.text);
+      return {
+        ...review,
+        preserveOriginal: isJapanese
+      };
+    });
+
     // Call our Supabase Edge Function
     try {
       const response = await fetch(`${SUPABASE_EDGE_FUNCTION_URL.replace('google-places-api', 'summarize-reviews')}`, {
@@ -24,7 +50,11 @@ export const generateReviewSummary = async (reviews: Review[], language: string 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ reviews, language })
+        body: JSON.stringify({ 
+          reviews: processedReviews, 
+          language,
+          preserveJapanese: true 
+        })
       });
 
       if (!response.ok) {

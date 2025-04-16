@@ -13,8 +13,9 @@ import {
 import Header from '@/components/Header';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import useGoogleMaps from '@/hooks/useGoogleMaps';
-import { generateReviewSummary, CategorySummary } from '@/utils/reviewSummary';
+import { generateReviewSummary } from '@/utils/reviewSummary';
 import type { Restaurant, Review, ReviewSortOption } from '@/types';
+import type { CategorySummary } from '@/utils/reviewSummary';
 import { formatDistance, formatDuration } from '@/utils/formatters';
 import { LanguageContext } from '@/components/LanguageSelector';
 
@@ -31,6 +32,7 @@ const RestaurantDetails = () => {
   const [isGeneratingMainSummary, setIsGeneratingMainSummary] = useState<boolean>(false);
   const [categorySummary, setCategorySummary] = useState<CategorySummary | null>(null);
   const { language, t } = useContext(LanguageContext);
+  const [isLoadingNewReviews, setIsLoadingNewReviews] = useState<boolean>(false);
 
   const getPhotoUrl = (photoRef: string) => {
     return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
@@ -46,11 +48,33 @@ const RestaurantDetails = () => {
     );
   };
 
-  // Handle sort change explicitly
-  const handleSortChange = useCallback((value: string) => {
+  // Handle sort change explicitly - now also refetches restaurant details with new sort
+  const handleSortChange = useCallback(async (value: string) => {
     console.log("Sorting changed to:", value);
     setReviewSort(value as ReviewSortOption);
-  }, []);
+    setIsLoadingNewReviews(true);
+    
+    if (id) {
+      try {
+        // Pass the review sort option to fetch appropriate reviews
+        const details = await fetchRestaurantDetails(id, value);
+        if (details) {
+          setRestaurant(details);
+          // Clear existing review summaries to regenerate them
+          setReviewSummaries({});
+          
+          // Generate a summary of all reviews
+          if (details.reviews && details.reviews.length > 0) {
+            generateAllReviewsSummary(details.reviews);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching restaurant details with new sort:", error);
+      } finally {
+        setIsLoadingNewReviews(false);
+      }
+    }
+  }, [id, fetchRestaurantDetails]);
 
   // Updated sorting function with memoization to prevent unnecessary calculations
   const updateSortedReviews = useCallback(() => {
@@ -69,8 +93,24 @@ const RestaurantDetails = () => {
     setSortedReviews(reviews);
   }, [restaurant?.reviews, reviewSort]);
 
+  // Helper to detect if text is Japanese
+  const isJapaneseText = (text: string): boolean => {
+    // Check for Japanese characters (Hiragana, Katakana, Kanji)
+    const japaneseRegex = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]/;
+    return japaneseRegex.test(text);
+  };
+
   const getReviewSummary = async (reviewIndex: number, reviewText: string) => {
     if (reviewSummaries[reviewIndex] || !reviewText) return;
+    
+    // If UI language is Japanese but review is already in Japanese, use the original
+    if (language === 'ja' && isJapaneseText(reviewText)) {
+      setReviewSummaries(prev => ({
+        ...prev,
+        [reviewIndex]: reviewText
+      }));
+      return;
+    }
     
     try {
       const summary = await generateReviewSummary([{ 
@@ -111,7 +151,8 @@ const RestaurantDetails = () => {
       setLoading(true);
       try {
         console.log("Fetching restaurant details for ID:", id);
-        const details = await fetchRestaurantDetails(id);
+        // Pass the current review sort option
+        const details = await fetchRestaurantDetails(id, reviewSort);
         if (details) {
           setRestaurant(details);
           
@@ -135,7 +176,7 @@ const RestaurantDetails = () => {
     };
 
     loadRestaurantDetails();
-  }, [id, fetchRestaurantDetails]);
+  }, [id, fetchRestaurantDetails, reviewSort]);
 
   // Regenerate summary when language changes
   useEffect(() => {
@@ -348,22 +389,31 @@ const RestaurantDetails = () => {
           </div>
         )}
         
-        {restaurant.reviews && restaurant.reviews.length > 0 && (
+        {restaurant?.reviews && restaurant.reviews.length > 0 && (
           <div className="p-4">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-semibold">{t('reviews')}</h2>
-              <Select
-                value={reviewSort}
-                onValueChange={handleSortChange}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={t('sort_reviews_by')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">{t('most_recent')}</SelectItem>
-                  <SelectItem value="helpful">{t('most_helpful')}</SelectItem>
-                </SelectContent>
-              </Select>
+              
+              <div className="relative">
+                {isLoadingNewReviews && (
+                  <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                    <LoadingSpinner size="small" />
+                  </div>
+                )}
+                <Select
+                  value={reviewSort}
+                  onValueChange={handleSortChange}
+                  disabled={isLoadingNewReviews}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder={t('sort_reviews_by')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">{t('most_recent')}</SelectItem>
+                    <SelectItem value="helpful">{t('most_helpful')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="space-y-4">

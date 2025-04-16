@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import type { Location, Restaurant } from '../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../config/api';
@@ -88,10 +87,10 @@ export const fetchNearbyRestaurants = async (
   }
 };
 
-// Fetch restaurant details
-export const fetchRestaurantDetails = async (restaurantId: string): Promise<Restaurant | null> => {
+// Fetch restaurant details with optional review sorting
+export const fetchRestaurantDetails = async (restaurantId: string, reviewSort: string = 'recent'): Promise<Restaurant | null> => {
   try {
-    console.log('Fetching restaurant details for:', restaurantId);
+    console.log('Fetching restaurant details for:', restaurantId, 'with review sort:', reviewSort);
     
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
@@ -103,7 +102,9 @@ export const fetchRestaurantDetails = async (restaurantId: string): Promise<Rest
         action: 'getDetails',
         placeId: restaurantId,
         fields: 'name,rating,vicinity,user_ratings_total,price_level,photos,geometry,opening_hours,reviews',
-        apiKey: GOOGLE_API_KEY
+        apiKey: GOOGLE_API_KEY,
+        reviewSort: reviewSort,
+        reviewCount: 5
       })
     });
     
