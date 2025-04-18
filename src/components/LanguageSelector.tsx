@@ -33,6 +33,7 @@ export const translations = {
     no_results: 'No results found',
     error: 'Error',
     close: 'Close',
+    nearby: 'Nearby',
     
     // Location
     location_not_available: 'Location not available',
@@ -119,6 +120,7 @@ export const translations = {
     no_results: '結果が見つかりません',
     error: 'エラー',
     close: '閉じる',
+    nearby: '近く',
     
     // Location
     location_not_available: '位置情報が利用できません',
