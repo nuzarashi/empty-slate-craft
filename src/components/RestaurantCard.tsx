@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, MapPin, Star } from 'lucide-react';
+import { Clock, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Restaurant } from '../types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
 import { LanguageContext } from '@/components/LanguageSelector';
-import PhotoCarousel from './restaurant-details/PhotoCarousel';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -30,6 +29,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   
   const { t } = useContext(LanguageContext);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   
   // Create photo URLs using the photo_reference
   const getPhotoUrl = (photoRef: string) => {
@@ -57,7 +58,27 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
     };
     
     setImageUrls(generateImageUrls());
+    // Reset current index when changing restaurants
+    setCurrentPhotoIndex(0);
+    setIsImageLoaded(false);
   }, [photos, name]);
+  
+  // Handle navigation
+  const nextPhoto = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentPhotoIndex((prev) => (prev + 1) % imageUrls.length);
+    setIsImageLoaded(false);
+  };
+  
+  const prevPhoto = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentPhotoIndex((prev) => 
+      prev === 0 ? imageUrls.length - 1 : prev - 1
+    );
+    setIsImageLoaded(false);
+  };
   
   // Format price level as $ symbols
   const priceDisplay = price_level ? '$'.repeat(price_level) : '$';
@@ -72,11 +93,54 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
       <Link to={detailLink} className="block">
         <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 bg-white border-0">
           <div className="relative h-80 overflow-hidden">
-            {/* Use the PhotoCarousel component instead of custom implementation */}
-            <PhotoCarousel photoUrls={imageUrls} restaurantName={name} />
+            {/* Simplified carousel implementation */}
+            {!isImageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                <div className="animate-pulse w-8 h-8 rounded-full bg-gray-300"></div>
+              </div>
+            )}
+            
+            <img 
+              src={imageUrls[currentPhotoIndex]} 
+              alt={`${name} - photo ${currentPhotoIndex+1}`}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setIsImageLoaded(true)}
+              onError={() => console.error(`Failed to load image: ${imageUrls[currentPhotoIndex]}`)}
+            />
+            
+            {imageUrls.length > 1 && (
+              <>
+                <button 
+                  onClick={prevPhoto} 
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
+                  aria-label="Previous photo"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                
+                <button 
+                  onClick={nextPhoto}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
+                  aria-label="Next photo"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
+                  {imageUrls.map((_, index) => (
+                    <div 
+                      key={index} 
+                      className={`w-1.5 h-1.5 rounded-full transition-all ${
+                        index === currentPhotoIndex ? 'bg-white scale-110' : 'bg-white/50'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             
             {opening_hours?.open_now !== undefined && (
-              <div className="absolute top-2 right-2 z-10">
+              <div className="absolute top-2 right-2 z-20">
                 <Badge variant={opening_hours.open_now ? "default" : "secondary"}>
                   {opening_hours.open_now ? t('open_now') : t('closed')}
                 </Badge>

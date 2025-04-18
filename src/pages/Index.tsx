@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -66,9 +67,9 @@ const Index = () => {
         
         {/* Filter Controls */}
         {location && (
-          <div className="mb-4 sticky top-16 z-50 bg-gray-50 pt-1 pb-2">
+          <div className="mb-4 sticky top-16 z-40 bg-gray-50 pt-1 pb-2">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">{t('restaurants')} {t('nearby')}</h2>
+              <div className="invisible">Placeholder</div> {/* Removed the duplicate "Restaurants Nearby" text */}
               <Button 
                 variant="outline" 
                 onClick={() => setShowFilters(!showFilters)}

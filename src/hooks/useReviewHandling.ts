@@ -73,7 +73,7 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     }
   };
 
-  // Handle sort change explicitly - now also refetches restaurant details with new sort
+  // Handle sort change - fixed to prevent timeouts and failures
   const handleSortChange = useCallback(async (value: string) => {
     console.log("Sorting changed to:", value);
     
@@ -87,34 +87,82 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     
     if (restaurant?.id || restaurant?.place_id) {
       try {
-        console.log("Fetching new reviews with sort:", value);
         // Use the proper ID for fetching (place_id or id)
         const restaurantId = restaurant.place_id ? `place_id:${restaurant.place_id}` : restaurant.id;
         
-        // Set a timeout to prevent hanging requests
-        const timeoutPromise = new Promise<null>((_, reject) => {
-          setTimeout(() => reject(new Error("Request timed out")), 15000);
-        });
+        // Fetch with a smaller timeout to prevent UI hanging
+        const controllerTimeout = new AbortController();
+        const timeoutId = setTimeout(() => controllerTimeout.abort(), 8000);
         
-        // Race between the actual fetch and the timeout
-        const details = await Promise.race([
-          fetchRestaurantDetails(restaurantId, value as ReviewSortOption),
-          timeoutPromise
-        ]);
+        // Attempt to fetch with timeout control
+        const fetchPromise = fetchRestaurantDetails(restaurantId, value as ReviewSortOption);
+        
+        // Create a race between the fetch and a timeout
+        let details: Restaurant | null = null;
+        
+        try {
+          details = await Promise.race([
+            fetchPromise,
+            new Promise<null>((_, reject) => {
+              setTimeout(() => {
+                reject(new Error("Request timed out"));
+              }, 7000);
+            })
+          ]);
+        } catch (error) {
+          if (error instanceof Error && error.message === "Request timed out") {
+            console.log("Fetch timed out, defaulting to current restaurant data");
+            // If timeout, use existing restaurant data but sort differently
+            if (restaurant.reviews) {
+              details = { ...restaurant };
+            }
+          } else {
+            throw error; // Re-throw other errors
+          }
+        } finally {
+          clearTimeout(timeoutId);
+        }
         
         if (details) {
-          console.log("New details fetched successfully:", details);
+          console.log("Processing review data:", details);
           // Clear existing review summaries to regenerate them
           setReviewSummaries({});
           
           // Generate a summary of all reviews
           if (details.reviews && details.reviews.length > 0) {
-            generateAllReviewsSummary(details.reviews);
+            console.log(`Processing ${details.reviews.length} reviews`);
+            // Sort reviews locally as a fallback
+            const sortedReviews = [...details.reviews].sort((a, b) => {
+              if (value === 'recent') {
+                return b.time - a.time;
+              } else {
+                return (b.rating * 10000 + b.time) - (a.rating * 10000 + a.time);
+              }
+            });
+            
+            // Update the restaurant's reviews with our sorted version
+            details.reviews = sortedReviews;
+            setSortedReviews(sortedReviews);
+            
+            // Generate the summary
+            generateAllReviewsSummary(sortedReviews);
           }
         }
       } catch (error) {
         console.error("Error fetching restaurant details with new sort:", error);
-        toast.error("Failed to load reviews. Please try again.");
+        toast.error("Failed to load reviews. Using existing data instead.");
+        
+        // Fallback: sort existing reviews locally
+        if (restaurant.reviews && restaurant.reviews.length > 0) {
+          const sortedReviews = [...restaurant.reviews].sort((a, b) => {
+            if (value === 'recent') {
+              return b.time - a.time;
+            } else {
+              return (b.rating * 10000 + b.time) - (a.rating * 10000 + a.time);
+            }
+          });
+          setSortedReviews(sortedReviews);
+        }
       } finally {
         setIsLoadingNewReviews(false);
       }
