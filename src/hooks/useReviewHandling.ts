@@ -4,6 +4,7 @@ import { generateReviewSummary } from '@/utils/review';
 import type { Review, ReviewSortOption, Restaurant } from '@/types';
 import type { CategorySummary } from '@/utils/review/types';
 import { LanguageContext } from '@/components/LanguageSelector';
+import { toast } from 'sonner';
 
 interface UseReviewHandlingProps {
   restaurant: Restaurant | null;
@@ -84,11 +85,23 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     setReviewSort(value as ReviewSortOption);
     setIsLoadingNewReviews(true);
     
-    if (restaurant?.id) {
+    if (restaurant?.id || restaurant?.place_id) {
       try {
         console.log("Fetching new reviews with sort:", value);
-        // Pass the review sort option to fetch appropriate reviews
-        const details = await fetchRestaurantDetails(restaurant.id, value as ReviewSortOption);
+        // Use the proper ID for fetching (place_id or id)
+        const restaurantId = restaurant.place_id ? `place_id:${restaurant.place_id}` : restaurant.id;
+        
+        // Set a timeout to prevent hanging requests
+        const timeoutPromise = new Promise<null>((_, reject) => {
+          setTimeout(() => reject(new Error("Request timed out")), 15000);
+        });
+        
+        // Race between the actual fetch and the timeout
+        const details = await Promise.race([
+          fetchRestaurantDetails(restaurantId, value as ReviewSortOption),
+          timeoutPromise
+        ]);
+        
         if (details) {
           console.log("New details fetched successfully:", details);
           // Clear existing review summaries to regenerate them
@@ -101,11 +114,12 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
         }
       } catch (error) {
         console.error("Error fetching restaurant details with new sort:", error);
+        toast.error("Failed to load reviews. Please try again.");
       } finally {
         setIsLoadingNewReviews(false);
       }
     }
-  }, [restaurant?.id, fetchRestaurantDetails, reviewSort]);
+  }, [restaurant, fetchRestaurantDetails, reviewSort]);
 
   // Updated sorting function with memoization to prevent unnecessary calculations
   const updateSortedReviews = useCallback(() => {

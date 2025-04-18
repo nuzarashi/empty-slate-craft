@@ -4,7 +4,7 @@ import type { Restaurant, FilterOptions, MealType, DietaryRestriction, DietaryPr
 
 const mealTypeKeywords: Record<MealType, string[]> = {
   main: ['restaurant', 'food', 'meal', 'dinner', 'lunch'],
-  drinking: ['bar', 'pub', 'izakaya', 'tavern', 'brewery', 'lounge']
+  drinking: ['bar', 'pub', 'izakaya', 'tavern', 'brewery', 'lounge', 'night_club']
 };
 
 const dietaryKeywords: Record<DietaryRestriction, string[]> = {
@@ -70,15 +70,23 @@ const useRestaurants = (restaurants: Restaurant[]) => {
       }
 
       // Filter by meal type (checking the types and name for keywords)
-      if (filters.mealType !== 'main') {
-        const mealKeywords = mealTypeKeywords[filters.mealType];
-        const matchesMealType = restaurant.types.some(type => 
-          mealKeywords.includes(type)
-        ) || mealKeywords.some(keyword => 
-          restaurant.name.toLowerCase().includes(keyword)
+      if (filters.mealType === 'drinking') {
+        // If we're looking for drinking establishments, check both the isDrinking flag
+        // and the types for drinking-related keywords
+        const isDrinkingPlace = restaurant.isDrinking || 
+                               restaurant.types.some(type => mealTypeKeywords.drinking.includes(type));
+        
+        if (!isDrinkingPlace) {
+          return false;
+        }
+      } else if (filters.mealType === 'main' && restaurant.isDrinking) {
+        // If we're looking for main food places and this is flagged as a drinking place,
+        // only include it if it also has food-related types
+        const hasMainFoodType = restaurant.types.some(type => 
+          mealTypeKeywords.main.includes(type)
         );
         
-        if (!matchesMealType) {
+        if (!hasMainFoodType) {
           return false;
         }
       }

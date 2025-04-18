@@ -22,11 +22,49 @@ const dietaryKeywords: Record<keyof DietaryPreference, string[]> = {
   halal: ['halal', 'muslim-friendly', 'halal-certified']
 };
 
+// Drinking establishment keywords
+const drinkingKeywords = [
+  'bar', 'pub', 'izakaya', 'night_club', 'snack_bar', 'liquor_store', 'karaoke', 
+  'lounge', 'tavern', 'gastropub', 'great drinks', 'cocktails', 'wide sake selection', 
+  'beer menu', 'happy hour', 'all-you-can-drink', 'nomihodai', 'whiskey bar', 
+  'drinking with coworkers', 'after work spot', 'chill vibe', 'good for groups', 
+  'open late', 'second party', '2次会', 'private room', 'karaoke after dinner', 
+  'great for drinking', 'not for food', 'beer', 'bottles', 'drink menus', 
+  'dim lighting', 'neon lights', 'bar counter', 'drinks toast', 'snack food', 
+  '二次会にぴったり', '飲み放題', '雰囲気がいい', '落ち着いたバー', '深夜まで営業', 
+  '会社帰りに', '友達と飲みに行った'
+];
+
 export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  
+  // Detect if restaurant is good for drinking
+  const isDrinkingEstablishment = (restaurant: Restaurant): boolean => {
+    if (!restaurant) return false;
+    
+    // Check restaurant types, name, and vicinity
+    const textToCheck = [
+      ...(restaurant.types || []),
+      restaurant.name,
+      restaurant.vicinity,
+    ].join(' ').toLowerCase();
+    
+    // Check reviews if available
+    const reviewsText = restaurant.reviews 
+      ? restaurant.reviews.map(review => review.text).join(' ').toLowerCase()
+      : '';
+    
+    // Combine all text to check
+    const allText = `${textToCheck} ${reviewsText}`;
+    
+    // Look for keywords
+    return drinkingKeywords.some(keyword => 
+      allText.includes(keyword.toLowerCase())
+    );
+  };
   
   // Detect dietary options from restaurant details
   const detectDietaryOptions = (restaurant: Restaurant): DietaryPreference | undefined => {
@@ -85,16 +123,26 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
         toast.success(`Found ${newRestaurants.length} restaurants near you!`);
       }
       
-      // Add dietary preferences to each restaurant
-      const restaurantsWithDietary = newRestaurants.map(restaurant => {
+      // Add dietary preferences and drinking type to each restaurant
+      const enhancedRestaurants = newRestaurants.map(restaurant => {
         const dietaryPreferences = detectDietaryOptions(restaurant);
+        const isDrinking = isDrinkingEstablishment(restaurant);
+        
+        // Add drinking type to restaurant types if it's detected as a drinking establishment
+        let types = [...(restaurant.types || [])];
+        if (isDrinking && !types.includes('bar')) {
+          types.push('bar');
+        }
+        
         return {
           ...restaurant,
-          dietaryPreferences
+          types,
+          dietaryPreferences,
+          isDrinking
         };
       });
       
-      setRestaurants(prev => pageToken ? [...prev, ...restaurantsWithDietary] : restaurantsWithDietary);
+      setRestaurants(prev => pageToken ? [...prev, ...enhancedRestaurants] : enhancedRestaurants);
       setNextPageToken(token);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurants';
@@ -114,11 +162,21 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       const details = await getRestaurantDetails(placeId, reviewSort);
       
       if (details) {
-        // Add dietary preferences to the restaurant details
+        // Add dietary preferences and drinking type to the restaurant details
         const dietaryPreferences = detectDietaryOptions(details);
+        const isDrinking = isDrinkingEstablishment(details);
+        
+        // Add drinking type to restaurant types if it's detected as a drinking establishment
+        let types = [...(details.types || [])];
+        if (isDrinking && !types.includes('bar')) {
+          types.push('bar');
+        }
+        
         return {
           ...details,
-          dietaryPreferences
+          types,
+          dietaryPreferences,
+          isDrinking
         };
       }
       

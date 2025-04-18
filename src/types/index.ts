@@ -39,6 +39,7 @@ export interface Restaurant {
   reviews?: Review[];
   reviewSummary?: string; // AI-generated summary (added by our app)
   dietaryPreferences?: DietaryPreference; // Added dietary preferences
+  isDrinking?: boolean; // Flag for drinking establishments
 }
 
 export interface Review {

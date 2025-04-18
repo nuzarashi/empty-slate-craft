@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, MapPin, Star } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Restaurant } from '../types';
 import { formatDistance, formatDuration } from '@/utils/formatters';
 import { LanguageContext } from '@/components/LanguageSelector';
+import PhotoCarousel from './restaurant-details/PhotoCarousel';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -28,7 +29,6 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   } = restaurant;
   
   const { t } = useContext(LanguageContext);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   
   // Create photo URLs using the photo_reference
@@ -63,28 +63,6 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
   const priceDisplay = price_level ? '$'.repeat(price_level) : '$';
   const priceClass = price_level ? `price-level-${price_level}` : '';
   
-  // Functions to handle carousel navigation - must prevent event bubbling
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % imageUrls.length);
-  };
-
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? imageUrls.length - 1 : prevIndex - 1
-    );
-  };
-  
-  // Handle dot indicator click
-  const goToImage = (index: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentIndex(index);
-  };
-  
   // Create the restaurant detail route link with the proper ID
   // If place_id exists, use it prefixed with "place_id:"
   const detailLink = place_id ? `/restaurant/place_id:${place_id}` : `/restaurant/${id}`;
@@ -94,50 +72,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
       <Link to={detailLink} className="block">
         <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 bg-white border-0">
           <div className="relative h-80 overflow-hidden">
-            {/* Instagram-style carousel with dots and side-swipe navigation */}
-            <div className="relative h-full w-full">
-              <img 
-                src={imageUrls[currentIndex]} 
-                alt={`${name} - photo ${currentIndex+1}`}
-                className="w-full h-full object-cover"
-              />
-              
-              {/* Navigation arrows - simplified handlers */}
-              {imageUrls.length > 1 && (
-                <>
-                  <button 
-                    onClick={prevImage} 
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
-                    aria-label="Previous image"
-                    type="button"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-                  
-                  <button 
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
-                    aria-label="Next image"
-                    type="button"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                  
-                  {/* Instagram-style dot indicators */}
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
-                    {imageUrls.map((_, index) => (
-                      <button 
-                        key={index} 
-                        className={`w-2 h-2 rounded-full transition-all ${index === currentIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
-                        aria-label={`Go to image ${index+1}`}
-                        onClick={(e) => goToImage(index, e)}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            {/* Use the PhotoCarousel component instead of custom implementation */}
+            <PhotoCarousel photoUrls={imageUrls} restaurantName={name} />
             
             {opening_hours?.open_now !== undefined && (
               <div className="absolute top-2 right-2 z-10">
