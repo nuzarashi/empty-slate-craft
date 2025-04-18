@@ -98,6 +98,8 @@ export const translations = {
     atmosphere: 'Atmosphere',
     service: 'Service',
     closed: 'Closed',
+    read_more: 'Read more',
+    show_less: 'Show less',
     
     // Not Found
     page_not_found: 'Page not found',
@@ -182,6 +184,8 @@ export const translations = {
     atmosphere: '雰囲気',
     service: 'サービス',
     closed: '閉店',
+    read_more: 'もっと読む',
+    show_less: '閉じる',
     
     // Not Found
     page_not_found: 'ページが見つかりません',
