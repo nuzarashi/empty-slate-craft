@@ -8,7 +8,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MapPin, Filter, AlertCircle, WifiOff, Loader2 } from 'lucide-react';
-import FilterSidebar from '@/components/FilterSidebar'; // Assuming this component exists
+import FilterBar from '@/components/FilterBar'; // Assuming this component exists
 import type { FilterOptions, DietaryPreference } from '@/types';
 import { LanguageContext } from '@/components/LanguageSelector'; // Assuming this context exists
 
@@ -49,7 +49,7 @@ const Index = () => {
       loadingMaps   // Pass the loading state from useGoogleMaps
   );
 
-  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [isFilterBarOpen, setIsFilterBarOpen] = useState(false);
 
   const handleFilterChange = useCallback((newFilters: Partial<FilterOptions>) => {
     updateFilters(newFilters);
