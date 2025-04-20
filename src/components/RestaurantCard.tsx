@@ -1,191 +1,145 @@
-
-import React, { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { Clock, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Card, CardContent } from "@/components/ui/card";
+import React from 'react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Restaurant } from '../types';
-import { formatDistance, formatDuration } from '@/utils/formatters';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Button } from "@/components/ui/button";
+import { formatDistance, formatDuration } from '@/utils/formatters'; //
+import { Star, Clock, Walk, DollarSign, Sparkles, GlassWater } from 'lucide-react'; //
+import type { Restaurant } from '@/types'; //
+import { useRestaurantPhotos } from '@/hooks/useRestaurantPhotos'; //
+import { Link } from 'react-router-dom'; //
+import { useContext } from 'react';
+import { LanguageContext } from '@/components/LanguageSelector'; // Assuming this context exists
 
-interface RestaurantCardProps {
+interface RestaurantCardProps { // Changed prop interface name
   restaurant: Restaurant;
 }
 
-const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
-  const {
-    id,
-    place_id,
-    name,
-    vicinity,
-    rating,
-    user_ratings_total,
-    price_level,
-    photos,
-    opening_hours,
-    distance,
-    duration,
-  } = restaurant;
-  
-  const { t } = useContext(LanguageContext);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  
-  // Create photo URLs using the photo_reference
-  const getPhotoUrl = (photoRef: string) => {
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`;
-  };
-  
-  useEffect(() => {
-    // Generate image URLs
-    const generateImageUrls = () => {
-      // If photos exist from Google API, use them
-      if (photos && photos.length > 0) {
-        // Limit to 5 photos max
-        const photoRefs = photos.slice(0, 5).map(photo => photo.photo_reference);
-        return photoRefs.map(ref => getPhotoUrl(ref));
-      } 
-      
-      // Fallback to placeholder images
-      return [
-        `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(name)}`,
-        `https://via.placeholder.com/800x600/FF6B35/FFFFFF?text=Food+1`,
-        `https://via.placeholder.com/800x600/D62828/FFFFFF?text=Food+2`,
-        `https://via.placeholder.com/800x600/0A9396/FFFFFF?text=Food+3`,
-        `https://via.placeholder.com/800x600/005F73/FFFFFF?text=Food+4`,
-      ];
-    };
-    
-    setImageUrls(generateImageUrls());
-    // Reset current index when changing restaurants
-    setCurrentPhotoIndex(0);
-    setIsImageLoaded(false);
-  }, [photos, name]);
-  
-  // Handle navigation
-  const nextPhoto = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentPhotoIndex((prev) => (prev + 1) % imageUrls.length);
-    setIsImageLoaded(false);
-  };
-  
-  const prevPhoto = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentPhotoIndex((prev) => 
-      prev === 0 ? imageUrls.length - 1 : prev - 1
+// Changed component name to RestaurantCard
+const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
+  const { photoUrls } = useRestaurantPhotos(restaurant); //
+  const { t } = useContext(LanguageContext); // Assuming LanguageContext provides 't' function
+  const placeId = restaurant.place_id || restaurant.id; // Use place_id if available
+
+  const renderPriceLevel = (level: number | undefined) => {
+    if (level === undefined) return <span className="text-xs text-gray-500">{t('price_not_available')}</span>;
+    return (
+      <span className="flex items-center">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <DollarSign
+            key={i}
+            className={`h-4 w-4 ${i < level ? 'text-food-dark' : 'text-gray-300'}`} // for color name possibility
+            strokeWidth={i < level ? 2.5 : 1.5}
+          />
+        ))}
+      </span>
     );
-    setIsImageLoaded(false);
   };
-  
-  // Format price level as $ symbols
-  const priceDisplay = price_level ? '$'.repeat(price_level) : '$';
-  const priceClass = price_level ? `price-level-${price_level}` : '';
-  
-  // Create the restaurant detail route link with the proper ID
-  // If place_id exists, use it prefixed with "place_id:"
-  const detailLink = place_id ? `/restaurant/place_id:${place_id}` : `/restaurant/${id}`;
-  
+
   return (
-    <div className="relative"> {/* Wrap card in relative div for z-index isolation */}
-      <Link to={detailLink} className="block">
-        <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 bg-white border-0">
-          <div className="relative h-80 overflow-hidden">
-            {/* Simplified carousel implementation */}
-            {!isImageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-                <div className="animate-pulse w-8 h-8 rounded-full bg-gray-300"></div>
-              </div>
-            )}
-            
-            <img 
-              src={imageUrls[currentPhotoIndex]} 
-              alt={`${name} - photo ${currentPhotoIndex+1}`}
-              className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onLoad={() => setIsImageLoaded(true)}
-              onError={() => console.error(`Failed to load image: ${imageUrls[currentPhotoIndex]}`)}
-            />
-            
-            {imageUrls.length > 1 && (
-              <>
-                <button 
-                  onClick={prevPhoto} 
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
-                  aria-label="Previous photo"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                
-                <button 
-                  onClick={nextPhoto}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-1 hover:bg-black/50 transition-colors z-10"
-                  aria-label="Next photo"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                
-                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
-                  {imageUrls.map((_, index) => (
-                    <div 
-                      key={index} 
-                      className={`w-1.5 h-1.5 rounded-full transition-all ${
-                        index === currentPhotoIndex ? 'bg-white scale-110' : 'bg-white/50'
-                      }`}
+    <Card className="w-full overflow-hidden flex flex-col h-full shadow-md hover:shadow-lg transition-shadow duration-200">
+      {photoUrls.length > 0 ? (
+        <div className="relative">
+          {/* Use Carousel component from shadcn/ui */}
+          <Carousel className="w-full">
+            <CarouselContent>
+              {/* Map through photoUrls (max 5 ensured by hook) */}
+              {photoUrls.map((url, index) => (
+                <CarouselItem key={index}>
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={url}
+                      alt={`${restaurant.name} photo ${index + 1}`}
+                      className="object-cover w-full h-full"
+                      loading="lazy"
+                      onError={(e) => {
+                        // Fallback if an image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.src = `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(restaurant.name)}`; // for color name possibility
+                        target.alt = `${restaurant.name} placeholder`;
+                      }}
                     />
-                  ))}
-                </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {/* Show controls only if more than one photo */}
+            {photoUrls.length > 1 && (
+              <>
+                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/75" />
+                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/75" />
               </>
             )}
-            
-            {opening_hours?.open_now !== undefined && (
-              <div className="absolute top-2 right-2 z-20">
-                <Badge variant={opening_hours.open_now ? "default" : "secondary"}>
-                  {opening_hours.open_now ? t('open_now') : t('closed')}
-                </Badge>
-              </div>
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 z-10">
-              <h3 className="text-xl font-semibold text-white line-clamp-1">{name}</h3>
-            </div>
+          </Carousel>
+        </div>
+      ) : (
+         // Placeholder if no photos
+         <div className="aspect-video bg-gray-200 flex items-center justify-center">
+           <span className="text-gray-500">{t('no_image')}</span>
+         </div>
+      )}
+
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-lg font-semibold truncate text-left">{restaurant.name}</CardTitle>
+        <p className="text-sm text-muted-foreground truncate text-left">{restaurant.vicinity}</p>
+      </CardHeader>
+
+      <CardContent className="flex-grow px-4 pb-3">
+        <div className="flex items-center justify-between text-sm mb-2">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+            <span>{restaurant.rating ? restaurant.rating.toFixed(1) : t('no_rating')}</span>
+            <span className="text-muted-foreground">({restaurant.user_ratings_total || 0})</span>
           </div>
-          
-          <CardContent className="p-3">
-            <div className="flex items-center text-sm text-muted-foreground mb-2">
-              <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-              <span className="line-clamp-1">{vicinity}</span>
+          {renderPriceLevel(restaurant.price_level)}
+        </div>
+
+        <div className="flex items-center text-sm text-muted-foreground gap-3">
+          {restaurant.distance !== undefined && (
+            <div className="flex items-center gap-1">
+              <Walk className="w-4 h-4" />
+              {/* */}
+              <span>{formatDistance(restaurant.distance)}</span>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  <Star className="w-6 h-6 text-food-yellow mr-1" fill="gold" strokeWidth={0.5} />
-                  <span className="font-medium text-lg">{rating}</span>
-                  <span className="text-muted-foreground text-xs ml-1">({user_ratings_total})</span>
-                </div>
-                
-                <span className={`price-label ${priceClass} text-xs font-medium`}>{priceDisplay}</span>
-              </div>
-              
-              {distance !== undefined && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3 mr-1" />
-                  <span>{formatDuration(duration)}</span>
-                </div>
-              )}
+          )}
+          {restaurant.duration !== undefined && (
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {/* */}
+              <span>{formatDuration(restaurant.duration)}</span>
             </div>
-            
-            {restaurant.reviewSummary && (
-              <p className="text-xs mt-2 line-clamp-1 italic text-muted-foreground">
-                "{restaurant.reviewSummary}"
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </Link>
-    </div>
+          )}
+        </div>
+         {restaurant.opening_hours && (
+           <p className={`text-xs font-medium mt-1 ${restaurant.opening_hours.open_now ? 'text-green-600' : 'text-red-600'}`}>
+             {restaurant.opening_hours.open_now ? t('open_now') : t('closed_now')}
+           </p>
+         )}
+         {/* Display AI summary if available */}
+         {restaurant.reviewSummary && (
+            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
+              <Sparkles className="w-3 h-3 inline-block mr-1 text-primary" />
+              {restaurant.reviewSummary}
+            </p>
+         )}
+         {/* Display Drinking badge if applicable */}
+         {restaurant.isDrinking && (
+           <Badge variant="secondary" className="mt-2 text-xs">
+             <GlassWater className="w-3 h-3 mr-1"/>
+             {t('good_for_drinks')}
+           </Badge>
+         )}
+      </CardContent>
+
+      <CardFooter className="px-4 pb-4 pt-0">
+        <Button asChild variant="default" size="sm" className="w-full bg-food-orange hover:bg-food-red">
+          {/* Link to details page using place_id or id */}
+          <Link to={`/details/${placeId}`}>{t('view_details')}</Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
+// Changed default export name
 export default RestaurantCard;
