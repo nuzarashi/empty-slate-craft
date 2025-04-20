@@ -72,25 +72,25 @@ export const createLocalSummary = (reviews: Review[], language: string = 'en'): 
   
   if (foodMentions > 0) {
     foodSentiment = avgRating >= 4 
-      ? (language === 'ja' ? '絶賛されている' : 'praised') 
+      ? (language === 'ja' ? '美味', '絶品' : 'praised') 
       : avgRating >= 3 
-        ? (language === 'ja' ? '満足できる' : 'decent') 
-        : (language === 'ja' ? '批判されている' : 'criticized');
+        ? (language === 'ja' ? '満足' : 'decent') 
+        : (language === 'ja' ? '不味い' : 'criticized');
   }
   
   if (atmosphereMentions > 0) {
     atmosphereSentiment = avgRating >= 4 
-      ? (language === 'ja' ? '魅力的な' : 'inviting') 
+      ? (language === 'ja' ? '魅力的' : 'inviting') 
       : avgRating >= 3 
-        ? (language === 'ja' ? '許容できる' : 'acceptable') 
-        : (language === 'ja' ? '残念な' : 'disappointing');
+        ? (language === 'ja' ? '普通' : 'acceptable') 
+        : (language === 'ja' ? '残念' : 'disappointing');
   }
 
   if (serviceMentions > 0) {
     serviceSentiment = avgRating >= 4 
-      ? (language === 'ja' ? '親切な' : 'friendly and attentive') 
+      ? (language === 'ja' ? '親切' : 'friendly and attentive') 
       : avgRating >= 3 
-        ? (language === 'ja' ? '普通の' : 'adequate') 
+        ? (language === 'ja' ? '普通' : 'adequate') 
         : (language === 'ja' ? '遅い' : 'slow or inattentive');
   }
   
