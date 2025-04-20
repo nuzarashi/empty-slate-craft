@@ -119,7 +119,7 @@ const Index = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{t('nearby_restaurants')}</h1>
-        <Button variant="outline" size="icon" onClick={() => setIsFilterSidebarOpen(true)}>
+        <Button variant="outline" size="icon" onClick={() => setIsFilterBarOpen(true)}>
           <Filter className="h-4 w-4" />
         </Button>
       </div>
@@ -146,7 +146,7 @@ const Index = () => {
             <WifiOff className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="mt-4 text-muted-foreground">{t('no_restaurants_found')}</p>
             <p className="text-xs text-muted-foreground mt-1">{t('try_adjusting_filters')}</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={() => setIsFilterSidebarOpen(true)}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => setIsFilterBarOpen(true)}>
                {t('adjust_filters')}
              </Button>
          </div>
@@ -170,10 +170,10 @@ const Index = () => {
         </>
       )}
 
-      {/* Filter Sidebar */}
-      <FilterSidebar
-        isOpen={isFilterSidebarOpen}
-        onClose={() => setIsFilterSidebarOpen(false)}
+      {/* Filter Bar */}
+      <FilterBar
+        isOpen={isFilterBarOpen}
+        onClose={() => setIsFilterBarOpen(false)}
         currentFilters={filters}
         onFilterChange={handleFilterChange}
         onPreferencesChange={handlePreferencesChange}
