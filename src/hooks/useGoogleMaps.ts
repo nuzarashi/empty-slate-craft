@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Location, Restaurant, DietaryPreference } from '../types';
-import { 
-  fetchNearbyRestaurants, 
+import {
+  fetchNearbyRestaurants,
   fetchRestaurantDetails as getRestaurantDetails
 } from '../services/googlePlacesAPI';
 
@@ -22,17 +21,17 @@ const dietaryKeywords: Record<keyof DietaryPreference, string[]> = {
   halal: ['halal', 'muslim-friendly', 'halal-certified']
 };
 
-// Drinking establishment keywords
+// Drinking establishment keywords - ADDED 'yakitori'
 const drinkingKeywords = [
-  'bar', 'pub', 'izakaya', 'night_club', 'snack_bar', 'liquor_store', 'karaoke', 
-  'lounge', 'tavern', 'gastropub', 'great drinks', 'cocktails', 'wide sake selection', 
-  'beer menu', 'happy hour', 'all-you-can-drink', 'nomihodai', 'whiskey bar', 
-  'drinking with coworkers', 'after work spot', 'chill vibe', 'good for groups', 
-  'open late', 'second party', '2次会', 'private room', 'karaoke after dinner', 
-  'great for drinking', 'not for food', 'beer', 'bottles', 'drink menus', 
-  'dim lighting', 'neon lights', 'bar counter', 'drinks toast', 'snack food', 
-  '二次会にぴったり', '飲み放題', '雰囲気がいい', '落ち着いたバー', '深夜まで営業', 
-  '会社帰りに', '友達と飲みに行った'
+  'bar', 'pub', 'izakaya', 'night_club', 'snack_bar', 'liquor_store', 'karaoke',
+  'lounge', 'tavern', 'gastropub', 'great drinks', 'cocktails', 'wide sake selection',
+  'beer menu', 'happy hour', 'all-you-can-drink', 'nomihodai', 'whiskey bar',
+  'drinking with coworkers', 'after work spot', 'chill vibe', 'good for groups',
+  'open late', 'second party', '2次会', 'private room', 'karaoke after dinner',
+  'great for drinking', 'not for food', 'beer', 'bottles', 'drink menus',
+  'dim lighting', 'neon lights', 'bar counter', 'drinks toast', 'snack food',
+  '二次会にぴったり', '飲み放題', '雰囲気がいい', '落ち着いたバー', '深夜まで営業',
+  '会社帰りに', '友達と飲みに行った', 'yakitori' // <-- Added Yakitori here
 ];
 
 export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
@@ -40,43 +39,43 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
   const [error, setError] = useState<string | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-  
+
   // Detect if restaurant is good for drinking
   const isDrinkingEstablishment = (restaurant: Restaurant): boolean => {
     if (!restaurant) return false;
-    
+
     // Check restaurant types, name, and vicinity
     const textToCheck = [
       ...(restaurant.types || []),
       restaurant.name,
       restaurant.vicinity,
     ].join(' ').toLowerCase();
-    
+
     // Check reviews if available
-    const reviewsText = restaurant.reviews 
+    const reviewsText = restaurant.reviews
       ? restaurant.reviews.map(review => review.text).join(' ').toLowerCase()
       : '';
-    
+
     // Combine all text to check
     const allText = `${textToCheck} ${reviewsText}`;
-    
+
     // Look for keywords
-    return drinkingKeywords.some(keyword => 
+    return drinkingKeywords.some(keyword =>
       allText.includes(keyword.toLowerCase())
     );
   };
-  
+
   // Detect dietary options from restaurant details
   const detectDietaryOptions = (restaurant: Restaurant): DietaryPreference | undefined => {
     if (!restaurant) return undefined;
-    
+
     const detailsText = [
       restaurant.name,
       restaurant.vicinity,
       ...(restaurant.types || []),
       // Add any other fields that might contain dietary information
     ].join(' ').toLowerCase();
-    
+
     // Identify matching dietary preferences
     const matchedPreferences: DietaryPreference = {
       vegan: false,
@@ -87,53 +86,56 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       noRawFood: false,
       halal: false
     };
-    
+
     // Check for each dietary preference
     Object.entries(dietaryKeywords).forEach(([key, keywords]) => {
       const prefKey = key as keyof DietaryPreference;
       matchedPreferences[prefKey] = keywords.some(keyword => detailsText.includes(keyword));
-      
+
       // If a restaurant is vegan, it's also vegetarian
       if (prefKey === 'vegan' && matchedPreferences.vegan) {
         matchedPreferences.vegetarian = true;
       }
     });
-    
+
     return matchedPreferences;
   };
-  
+
   const fetchRestaurants = useCallback(async (pageToken?: string) => {
     if (!location) {
       console.log("Cannot fetch restaurants: No location provided");
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log("Fetching restaurants with location:", location);
       const { restaurants: newRestaurants, nextPageToken: token } = await fetchNearbyRestaurants(location, pageToken);
-      
-      if (newRestaurants.length === 0) {
+
+      if (newRestaurants.length === 0 && !pageToken) { // Only show info if it's the first page and no results
         console.log("No restaurants found");
         toast.info("No restaurants found nearby. Try adjusting your filters or location.");
-      } else {
+      } else if (newRestaurants.length > 0) {
         console.log(`Found ${newRestaurants.length} restaurants`);
-        toast.success(`Found ${newRestaurants.length} restaurants near you!`);
+         // Only toast on first load? Or maybe not at all? Consider UX.
+         if (!pageToken) {
+             toast.success(`Found ${newRestaurants.length} restaurants near you!`);
+         }
       }
-      
+
       // Add dietary preferences and drinking type to each restaurant
       const enhancedRestaurants = newRestaurants.map(restaurant => {
         const dietaryPreferences = detectDietaryOptions(restaurant);
         const isDrinking = isDrinkingEstablishment(restaurant);
-        
+
         // Add drinking type to restaurant types if it's detected as a drinking establishment
         let types = [...(restaurant.types || [])];
-        if (isDrinking && !types.includes('bar')) {
-          types.push('bar');
+        if (isDrinking && !types.includes('bar') && !types.includes('izakaya') && !types.includes('pub')) { // Avoid adding duplicates
+          types.push('bar'); // Add a generic 'bar' type for filtering consistency
         }
-        
+
         return {
           ...restaurant,
           types,
@@ -141,7 +143,7 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
           isDrinking
         };
       });
-      
+
       setRestaurants(prev => pageToken ? [...prev, ...enhancedRestaurants] : enhancedRestaurants);
       setNextPageToken(token);
     } catch (err) {
@@ -160,18 +162,18 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
       // Use place_id if available, otherwise fall back to id
       const placeId = restaurantId.includes("place_id:") ? restaurantId.replace("place_id:", "") : restaurantId;
       const details = await getRestaurantDetails(placeId, reviewSort);
-      
+
       if (details) {
         // Add dietary preferences and drinking type to the restaurant details
         const dietaryPreferences = detectDietaryOptions(details);
         const isDrinking = isDrinkingEstablishment(details);
-        
+
         // Add drinking type to restaurant types if it's detected as a drinking establishment
         let types = [...(details.types || [])];
-        if (isDrinking && !types.includes('bar')) {
-          types.push('bar');
+        if (isDrinking && !types.includes('bar') && !types.includes('izakaya') && !types.includes('pub')) { // Avoid adding duplicates
+          types.push('bar'); // Add a generic 'bar' type
         }
-        
+
         return {
           ...details,
           types,
@@ -179,7 +181,7 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
           isDrinking
         };
       }
-      
+
       return null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch restaurant details';
@@ -191,26 +193,30 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
 
   useEffect(() => {
     if (location) {
-      console.log("Location available, triggering restaurant fetch");
+      console.log("Location available, triggering initial restaurant fetch");
+      setRestaurants([]); // Clear previous results on location change
+      setNextPageToken(null); // Reset token
       fetchRestaurants();
     }
-  }, [location, fetchRestaurants]);
+  }, [location]); // Removed fetchRestaurants from dependency array to prevent loop
 
   const loadMore = useCallback(() => {
-    if (nextPageToken) {
+    if (nextPageToken && !loading) { // Prevent multiple simultaneous loads
       console.log("Loading more restaurants with token:", nextPageToken);
       fetchRestaurants(nextPageToken);
     }
-  }, [nextPageToken, fetchRestaurants]);
+  }, [nextPageToken, loading, fetchRestaurants]); // Added loading and fetchRestaurants
 
-  return {
-    restaurants,
-    loading,
-    error,
-    hasMore: !!nextPageToken,
-    loadMore,
-    fetchRestaurantDetails
-  };
+
+  // Public API of the hook
+   return {
+     restaurants,
+     loading,
+     error,
+     hasMore: !!nextPageToken, // Expose derived state
+     loadMore, // Expose loadMore callback
+     fetchRestaurantDetails // Expose details fetcher
+   };
 };
 
 export default useGoogleMaps;
