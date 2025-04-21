@@ -1,133 +1,123 @@
-
 import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
-import { formatDistance, formatDuration } from '@/utils/formatters';
-import { Star, Clock, MapPin, DollarSign, Sparkles, GlassWater } from 'lucide-react';
-import type { Restaurant } from '@/types';
-import { useRestaurantPhotos } from '@/hooks/useRestaurantPhotos';
 import { Link } from 'react-router-dom';
-import { useContext } from 'react';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { Star, Clock } from 'lucide-react';
+import { formatDistance, formatDuration } from '@/utils/formatters';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import type { Restaurant } from '@/types';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
+  onClick?: (restaurant: Restaurant) => void;
 }
 
-const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
-  const { photoUrls } = useRestaurantPhotos(restaurant);
-  const { t } = useContext(LanguageContext);
-  const placeId = restaurant.place_id || restaurant.id;
+const RestaurantCard = ({ restaurant, onClick }: RestaurantCardProps) => {
+  const {
+    name,
+    vicinity,
+    rating,
+    user_ratings_total,
+    price_level,
+    opening_hours,
+    distance,
+    duration,
+    photos,
+    types = [],
+  } = restaurant;
 
-  const renderPriceLevel = (level: number | undefined) => {
-    if (level === undefined) return <span className="text-xs text-gray-500">{t('price_not_available')}</span>;
-    return (
-      <span className="flex items-center">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <DollarSign
-            key={i}
-            className={`h-4 w-4 ${i < level ? 'text-food-dark' : 'text-gray-300'}`}
-            strokeWidth={i < level ? 2.5 : 1.5}
-          />
-        ))}
-      </span>
-    );
-  };
+  // Get photo URL or placeholder
+  const photoUrl = photos && photos.length > 0
+    ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photos[0].photo_reference}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`
+    : `https://via.placeholder.com/400x200/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
+
+  // Format price level as $ symbols
+  const priceDisplay = price_level ? '$'.repeat(price_level) : '';
+  
+  // Determine if it's a drinking establishment
+  const isDrinking = restaurant.isDrinking || types.some(type => 
+    ['bar', 'night_club', 'pub', 'izakaya'].includes(type)
+  );
 
   return (
-    <Card className="w-full overflow-hidden flex flex-col h-full shadow-md hover:shadow-lg transition-shadow duration-200">
-      {photoUrls.length > 0 ? (
-        <div className="relative">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {photoUrls.map((url, index) => (
-                <CarouselItem key={index}>
-                  <div className="aspect-video overflow-hidden">
-                    <img
-                      src={url}
-                      alt={`${restaurant.name} photo ${index + 1}`}
-                      className="object-cover w-full h-full"
-                      loading="lazy"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(restaurant.name)}`;
-                        target.alt = `${restaurant.name} placeholder`;
-                      }}
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {photoUrls.length > 1 && (
-              <>
-                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/75" />
-                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/75" />
-              </>
+    <Link 
+      to={`/restaurant/${restaurant.place_id || restaurant.id}`} 
+      className="block no-underline"
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick(restaurant);
+        }
+      }}
+    >
+      <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+        <div className="relative h-48">
+          <img 
+            src={photoUrl} 
+            alt={name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = `https://via.placeholder.com/400x200/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
+            }}
+          />
+          {priceDisplay && (
+            <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded text-sm font-medium">
+              {priceDisplay}
+            </div>
+          )}
+          {opening_hours?.open_now !== undefined && (
+            <div 
+              className={cn(
+                "absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-medium",
+                opening_hours.open_now 
+                  ? "bg-green-500/80 text-white" 
+                  : "bg-red-500/80 text-white"
+              )}
+            >
+              {opening_hours.open_now ? 'Open Now' : 'Closed'}
+            </div>
+          )}
+        </div>
+        
+        <div className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="font-bold text-lg line-clamp-1">{name}</h3>
+            {rating && (
+              <div className="flex items-center">
+                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                <span className="ml-1 text-sm font-medium">{rating}</span>
+                <span className="text-xs text-gray-500 ml-1">({user_ratings_total})</span>
+              </div>
             )}
-          </Carousel>
-        </div>
-      ) : (
-         <div className="aspect-video bg-gray-200 flex items-center justify-center">
-           <span className="text-gray-500">{t('no_image')}</span>
-         </div>
-      )}
-
-      <CardHeader className="pb-2 pt-4 px-4">
-        <CardTitle className="text-lg font-semibold truncate text-left">{restaurant.name}</CardTitle>
-        <p className="text-sm text-muted-foreground truncate text-left">{restaurant.vicinity}</p>
-      </CardHeader>
-
-      <CardContent className="flex-grow px-4 pb-3">
-        <div className="flex items-center justify-between text-sm mb-2">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-            <span>{restaurant.rating ? restaurant.rating.toFixed(1) : t('no_rating')}</span>
-            <span className="text-muted-foreground">({restaurant.user_ratings_total || 0})</span>
           </div>
-          {renderPriceLevel(restaurant.price_level)}
-        </div>
-
-        <div className="flex items-center text-sm text-muted-foreground gap-3">
-          {restaurant.distance !== undefined && (
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{formatDistance(restaurant.distance)}</span>
+          
+          <p className="text-gray-600 text-sm mb-3 line-clamp-1">{vicinity}</p>
+          
+          {distance !== undefined && (
+            <div className="flex items-center text-sm text-gray-500 mb-3">
+              <Clock className="w-4 h-4 mr-1" />
+              <span>{formatDuration(duration)}</span>
+              <span className="mx-1">·</span>
+              <span>{formatDistance(distance)}</span>
             </div>
           )}
-          {restaurant.duration !== undefined && (
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{formatDuration(restaurant.duration)}</span>
-            </div>
-          )}
+          
+          <div className="flex flex-wrap gap-1 mt-2">
+            {isDrinking && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
+                Bar/Izakaya
+              </Badge>
+            )}
+            {types.slice(0, 2).map((type) => (
+              !['bar', 'night_club', 'pub', 'izakaya'].includes(type) && (
+                <Badge key={type} variant="outline" className="bg-gray-50">
+                  {type.replace(/_/g, ' ')}
+                </Badge>
+              )
+            ))}
+          </div>
         </div>
-         {restaurant.opening_hours && (
-           <p className={`text-xs font-medium mt-1 ${restaurant.opening_hours.open_now ? 'text-green-600' : 'text-red-600'}`}>
-             {restaurant.opening_hours.open_now ? t('open_now') : t('closed_now')}
-           </p>
-         )}
-         {restaurant.reviewSummary && (
-            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
-              <Sparkles className="w-3 h-3 inline-block mr-1 text-primary" />
-              {restaurant.reviewSummary}
-            </p>
-         )}
-         {restaurant.isDrinking && (
-           <Badge variant="secondary" className="mt-2 text-xs">
-             <GlassWater className="w-3 h-3 mr-1"/>
-             {t('good_for_drinks')}
-           </Badge>
-         )}
-      </CardContent>
-
-      <CardFooter className="px-4 pb-4 pt-0">
-        <Button asChild variant="default" size="sm" className="w-full bg-food-orange hover:bg-food-red">
-          <Link to={`/details/${placeId}`}>{t('view_details')}</Link>
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </Link>
   );
 };
 
