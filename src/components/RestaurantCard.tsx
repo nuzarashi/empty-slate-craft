@@ -1,25 +1,25 @@
+
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { formatDistance, formatDuration } from '@/utils/formatters'; //
-import { Star, Clock, Walk, DollarSign, Sparkles, GlassWater } from 'lucide-react'; //
-import type { Restaurant } from '@/types'; //
-import { useRestaurantPhotos } from '@/hooks/useRestaurantPhotos'; //
-import { Link } from 'react-router-dom'; //
+import { formatDistance, formatDuration } from '@/utils/formatters';
+import { Star, Clock, MapPin, DollarSign, Sparkles, GlassWater } from 'lucide-react';
+import type { Restaurant } from '@/types';
+import { useRestaurantPhotos } from '@/hooks/useRestaurantPhotos';
+import { Link } from 'react-router-dom';
 import { useContext } from 'react';
-import { LanguageContext } from '@/components/LanguageSelector'; // Assuming this context exists
+import { LanguageContext } from '@/components/LanguageSelector';
 
-interface RestaurantCardProps { // Changed prop interface name
+interface RestaurantCardProps {
   restaurant: Restaurant;
 }
 
-// Changed component name to RestaurantCard
 const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
-  const { photoUrls } = useRestaurantPhotos(restaurant); //
-  const { t } = useContext(LanguageContext); // Assuming LanguageContext provides 't' function
-  const placeId = restaurant.place_id || restaurant.id; // Use place_id if available
+  const { photoUrls } = useRestaurantPhotos(restaurant);
+  const { t } = useContext(LanguageContext);
+  const placeId = restaurant.place_id || restaurant.id;
 
   const renderPriceLevel = (level: number | undefined) => {
     if (level === undefined) return <span className="text-xs text-gray-500">{t('price_not_available')}</span>;
@@ -28,7 +28,7 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
         {Array.from({ length: 4 }).map((_, i) => (
           <DollarSign
             key={i}
-            className={`h-4 w-4 ${i < level ? 'text-food-dark' : 'text-gray-300'}`} // for color name possibility
+            className={`h-4 w-4 ${i < level ? 'text-food-dark' : 'text-gray-300'}`}
             strokeWidth={i < level ? 2.5 : 1.5}
           />
         ))}
@@ -40,10 +40,8 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
     <Card className="w-full overflow-hidden flex flex-col h-full shadow-md hover:shadow-lg transition-shadow duration-200">
       {photoUrls.length > 0 ? (
         <div className="relative">
-          {/* Use Carousel component from shadcn/ui */}
           <Carousel className="w-full">
             <CarouselContent>
-              {/* Map through photoUrls (max 5 ensured by hook) */}
               {photoUrls.map((url, index) => (
                 <CarouselItem key={index}>
                   <div className="aspect-video overflow-hidden">
@@ -53,9 +51,8 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
                       className="object-cover w-full h-full"
                       loading="lazy"
                       onError={(e) => {
-                        // Fallback if an image fails to load
                         const target = e.target as HTMLImageElement;
-                        target.src = `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(restaurant.name)}`; // for color name possibility
+                        target.src = `https://via.placeholder.com/800x600/F4D35E/2D3047?text=${encodeURIComponent(restaurant.name)}`;
                         target.alt = `${restaurant.name} placeholder`;
                       }}
                     />
@@ -63,7 +60,6 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            {/* Show controls only if more than one photo */}
             {photoUrls.length > 1 && (
               <>
                 <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/75" />
@@ -73,7 +69,6 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
           </Carousel>
         </div>
       ) : (
-         // Placeholder if no photos
          <div className="aspect-video bg-gray-200 flex items-center justify-center">
            <span className="text-gray-500">{t('no_image')}</span>
          </div>
@@ -97,15 +92,13 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
         <div className="flex items-center text-sm text-muted-foreground gap-3">
           {restaurant.distance !== undefined && (
             <div className="flex items-center gap-1">
-              <Walk className="w-4 h-4" />
-              {/* */}
+              <MapPin className="w-4 h-4" />
               <span>{formatDistance(restaurant.distance)}</span>
             </div>
           )}
           {restaurant.duration !== undefined && (
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {/* */}
               <span>{formatDuration(restaurant.duration)}</span>
             </div>
           )}
@@ -115,14 +108,12 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
              {restaurant.opening_hours.open_now ? t('open_now') : t('closed_now')}
            </p>
          )}
-         {/* Display AI summary if available */}
          {restaurant.reviewSummary && (
             <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
               <Sparkles className="w-3 h-3 inline-block mr-1 text-primary" />
               {restaurant.reviewSummary}
             </p>
          )}
-         {/* Display Drinking badge if applicable */}
          {restaurant.isDrinking && (
            <Badge variant="secondary" className="mt-2 text-xs">
              <GlassWater className="w-3 h-3 mr-1"/>
@@ -133,7 +124,6 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
 
       <CardFooter className="px-4 pb-4 pt-0">
         <Button asChild variant="default" size="sm" className="w-full bg-food-orange hover:bg-food-red">
-          {/* Link to details page using place_id or id */}
           <Link to={`/details/${placeId}`}>{t('view_details')}</Link>
         </Button>
       </CardFooter>
@@ -141,5 +131,4 @@ const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
   );
 };
 
-// Changed default export name
 export default RestaurantCard;

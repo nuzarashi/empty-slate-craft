@@ -53,6 +53,7 @@ export const translations = {
     find_restaurants: 'Find Restaurants',
     location_permission: 'This app will request your location to find nearby restaurants',
     preferences_saved: 'Your preferences have been saved!',
+    your_preferences: 'Your Preferences',
     
     // Dietary preferences
     vegan: 'Vegan',
@@ -66,6 +67,7 @@ export const translations = {
     // Filters
     filters: 'Filters',
     open_now: 'Open Now',
+    closed_now: 'Closed',
     sort_by: 'Sort by',
     distance: 'Distance',
     rating: 'Rating',
@@ -80,6 +82,11 @@ export const translations = {
     min_rating: 'Minimum Rating',
     apply_filters: 'Apply Filters',
     reset_filters: 'Reset Filters',
+    price_not_available: 'Price not available',
+    no_image: 'No image',
+    no_rating: 'No rating',
+    good_for_drinks: 'Good for drinks',
+    view_details: 'View Details',
     
     // Restaurant Details
     back_to_restaurants: 'Back to restaurants',
@@ -111,6 +118,22 @@ export const translations = {
     language: 'Language',
     english: 'English',
     japanese: 'Japanese',
+
+    // Index page
+    fetching_location: 'Fetching your location...',
+    location_error_title: 'Location Error',
+    location_error_description: 'Unable to access your location. Please check your browser permissions.',
+    error_loading_title: 'Error Loading Data',
+    error_loading_description: 'There was an error loading restaurant data.',
+    retry: 'Retry',
+    nearby_restaurants: 'Nearby Restaurants',
+    showing_results_near: 'Showing results near',
+    within_minutes: 'within {{minutes}} minutes walk',
+    location_unavailable: 'Location data unavailable',
+    no_restaurants_found: 'No restaurants found',
+    try_adjusting_filters: 'Try adjusting your filters',
+    adjust_filters: 'Adjust Filters',
+    show_more: 'Show More',
   },
   ja: {
     // General
@@ -140,6 +163,7 @@ export const translations = {
     find_restaurants: 'レストランを探す',
     location_permission: 'このアプリは近くのレストランを見つけるためにあなたの位置情報をリクエストします',
     preferences_saved: 'あなたの好みが保存されました！',
+    your_preferences: '設定',
     
     // Dietary preferences
     vegan: 'ビーガン',
@@ -153,6 +177,7 @@ export const translations = {
     // Filters
     filters: 'フィルター',
     open_now: '営業中',
+    closed_now: '閉店',
     sort_by: '並び替え',
     distance: '距離',
     rating: '評価',
@@ -167,6 +192,11 @@ export const translations = {
     min_rating: '最低評価',
     apply_filters: 'フィルターを適用',
     reset_filters: 'フィルターをリセット',
+    price_not_available: '価格情報なし',
+    no_image: '画像なし',
+    no_rating: '評価なし',
+    good_for_drinks: '飲み物に最適',
+    view_details: '詳細を見る',
     
     // Restaurant Details
     back_to_restaurants: 'レストラン一覧に戻る',
@@ -198,6 +228,22 @@ export const translations = {
     language: '言語',
     english: '英語',
     japanese: '日本語',
+
+    // Index page
+    fetching_location: '位置情報を取得中...',
+    location_error_title: '位置情報エラー',
+    location_error_description: '位置情報へのアクセスができません。ブラウザの権限設定を確認してください。',
+    error_loading_title: 'データ読み込みエラー',
+    error_loading_description: 'レストランデータの読み込み中にエラーが発生しました。',
+    retry: '再試行',
+    nearby_restaurants: '近くのレストラン',
+    showing_results_near: '表示中の結果:',
+    within_minutes: '徒歩{{minutes}}分以内',
+    location_unavailable: '位置情報が利用できません',
+    no_restaurants_found: 'レストランが見つかりません',
+    try_adjusting_filters: 'フィルターを調整してみてください',
+    adjust_filters: 'フィルターを調整',
+    show_more: 'もっと表示',
   }
 };
 

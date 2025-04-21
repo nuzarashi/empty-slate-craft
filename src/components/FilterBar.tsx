@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -23,16 +24,29 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
-
-import type { FilterOptions, MealType, DietaryRestriction, SortOption } from '../types';
+import { useContext } from 'react';
+import { LanguageContext } from './LanguageSelector';
+import type { FilterOptions, MealType, DietaryRestriction, SortOption, DietaryPreference } from '../types';
 
 interface FilterBarProps {
-  filters: FilterOptions;
-  updateFilters: (newFilters: Partial<FilterOptions>) => void;
-  className?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  currentFilters: FilterOptions;
+  onFilterChange: (newFilters: Partial<FilterOptions>) => void;
+  onPreferencesChange: (newPreferences: { dietary: DietaryPreference, budget: number[] }) => void;
+  currentDietaryPreferences: DietaryPreference;
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ 
+  isOpen, 
+  onClose, 
+  currentFilters, 
+  onFilterChange, 
+  onPreferencesChange,
+  currentDietaryPreferences
+}) => {
+  const { t } = useContext(LanguageContext);
+  
   const handleMealTypeChange = (mealType: MealType) => {
     updateFilters({ mealType });
   };
@@ -53,141 +67,162 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, updateFilters, className
     updateFilters({ priceLevel: Array.from({ length: value[1] - value[0] + 1 }, (_, i) => i + value[0]) });
   };
 
-  const minPrice = Math.min(...filters.priceLevel);
-  const maxPrice = Math.max(...filters.priceLevel);
+  const updateFilters = (newFilters: Partial<FilterOptions>) => {
+    onFilterChange(newFilters);
+  };
+
+  const minPrice = Math.min(...currentFilters.priceLevel);
+  const maxPrice = Math.max(...currentFilters.priceLevel);
+  
+  if (!isOpen) return null;
   
   return (
-    <div className={cn("bg-white px-4 py-3 border-b relative z-20", className)}>
-      <div className="flex flex-wrap items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1">
-              {filters.mealType === 'main' ? <Coffee className="w-4 h-4" /> : <Beer className="w-4 h-4" />}
-              <span>{filters.mealType === 'main' ? 'Main Meal' : 'Drinking'}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>Meal Type</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleMealTypeChange('main')}>
-              <Coffee className="w-4 h-4 mr-2" />
-              <span>Main Meal</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleMealTypeChange('drinking')}>
-              <Beer className="w-4 h-4 mr-2" />
-              <span>Drinking</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1">
-              <Leaf className="w-4 h-4" />
-              <span>{filters.dietary === 'none' ? 'Any Diet' : filters.dietary}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>Dietary Restrictions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleDietaryChange('none')}>
-              Any
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDietaryChange('vegetarian')}>
-              Vegetarian
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDietaryChange('vegan')}>
-              Vegan
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDietaryChange('gluten-free')}>
-              Gluten Free
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDietaryChange('halal')}>
-              Halal
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1">
-              <SortAsc className="w-4 h-4" />
-              <span>
-                {filters.sortBy === 'distance' && 'Distance'}
-                {filters.sortBy === 'rating' && 'Rating'}
-                {filters.sortBy === 'price-asc' && 'Price: Low to High'}
-                {filters.sortBy === 'price-desc' && 'Price: High to Low'}
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col">
+      <div className="bg-white px-4 py-3 flex justify-between items-center border-b">
+        <h3 className="font-semibold">{t('filters')}</h3>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          {t('close')}
+        </Button>
+      </div>
+      
+      <div className="bg-white flex-1 overflow-y-auto">
+        <div className="p-4 space-y-6">
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">{t('meal_type')}</h4>
+            <div className="flex gap-2">
+              <Button 
+                variant={currentFilters.mealType === 'main' ? "default" : "outline"} 
+                size="sm" 
+                className="flex-1 gap-1"
+                onClick={() => handleMealTypeChange('main')}
+              >
+                <Coffee className="w-4 h-4" />
+                <span>{t('main_meal')}</span>
+              </Button>
+              <Button 
+                variant={currentFilters.mealType === 'drinking' ? "default" : "outline"} 
+                size="sm" 
+                className="flex-1 gap-1"
+                onClick={() => handleMealTypeChange('drinking')}
+              >
+                <Beer className="w-4 h-4" />
+                <span>{t('drinks')}</span>
+              </Button>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">{t('dietary')}</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {value: 'none', label: 'none'},
+                {value: 'vegetarian', label: 'vegetarian'},
+                {value: 'vegan', label: 'vegan'},
+                {value: 'gluten-free', label: 'gluten_free'},
+                {value: 'halal', label: 'halal'}
+              ].map((item) => (
+                <Button 
+                  key={item.value}
+                  variant={currentFilters.dietary === item.value ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => handleDietaryChange(item.value as DietaryRestriction)}
+                  className="justify-start"
+                >
+                  {item.value === 'none' ? null : <Leaf className="w-4 h-4 mr-1" />}
+                  {t(item.label)}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">{t('sort_by')}</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant={currentFilters.sortBy === 'distance' ? "default" : "outline"} 
+                size="sm"
+                onClick={() => handleSortChange('distance')}
+                className="justify-start"
+              >
+                <MapPin className="w-4 h-4 mr-1" />
+                {t('distance')}
+              </Button>
+              <Button 
+                variant={currentFilters.sortBy === 'rating' ? "default" : "outline"} 
+                size="sm"
+                onClick={() => handleSortChange('rating')}
+                className="justify-start"
+              >
+                <Star className="w-4 h-4 mr-1" />
+                {t('rating')}
+              </Button>
+              <Button 
+                variant={currentFilters.sortBy === 'price-asc' ? "default" : "outline"} 
+                size="sm"
+                onClick={() => handleSortChange('price-asc')}
+                className="justify-start col-span-2"
+              >
+                <DollarSign className="w-4 h-4 mr-1" />
+                {t('price_low_to_high')}
+              </Button>
+              <Button 
+                variant={currentFilters.sortBy === 'price-desc' ? "default" : "outline"} 
+                size="sm"
+                onClick={() => handleSortChange('price-desc')}
+                className="justify-start col-span-2"
+              >
+                <DollarSign className="w-4 h-4 mr-1" />
+                {t('price_high_to_low')}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-medium">{t('open_now')}</h4>
+              <Switch
+                checked={currentFilters.open}
+                onCheckedChange={(checked) => updateFilters({ open: checked })}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <h4 className="text-sm font-medium">{t('min_rating')}</h4>
+              <span className="text-sm font-medium">{currentFilters.minRating}+ ⭐</span>
+            </div>
+            <Slider
+              value={[currentFilters.minRating]}
+              min={0}
+              max={5}
+              step={0.5}
+              onValueChange={handleMinRatingChange}
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <h4 className="text-sm font-medium">{t('price_level')}</h4>
+              <span className="text-sm font-medium">
+                {Array(minPrice).fill('$').join('')} - {Array(maxPrice).fill('$').join('')}
               </span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleSortChange('distance')}>
-              <MapPin className="w-4 h-4 mr-2" />
-              Distance
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSortChange('rating')}>
-              <Star className="w-4 h-4 mr-2" />
-              Rating
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSortChange('price-asc')}>
-              <DollarSign className="w-4 h-4 mr-2" />
-              Price: Low to High
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleSortChange('price-desc')}>
-              <DollarSign className="w-4 h-4 mr-2" />
-              Price: High to Low
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <div className="flex items-center ml-auto space-x-2">
-          <Switch
-            id="open-now"
-            checked={filters.open}
-            onCheckedChange={(checked) => updateFilters({ open: checked })}
-          />
-          <Label htmlFor="open-now" className="text-sm flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            Open Now
-          </Label>
+            </div>
+            <Slider
+              value={[minPrice, maxPrice]}
+              min={1}
+              max={4}
+              step={1}
+              onValueChange={handlePriceChange}
+            />
+          </div>
         </div>
       </div>
       
-      <div className="mt-4 px-2">
-        <div className="mb-4">
-          <div className="flex justify-between mb-1">
-            <Label className="text-sm">Minimum Rating</Label>
-            <span className="text-sm font-medium">{filters.minRating}+ <Star className="inline w-4 h-4 text-food-yellow" fill="gold" strokeWidth={0.5} /></span>
-          </div>
-          <Slider
-            defaultValue={[filters.minRating]}
-            min={0}
-            max={5}
-            step={0.5}
-            onValueChange={handleMinRatingChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div>
-          <div className="flex justify-between mb-1">
-            <Label className="text-sm">Price Range</Label>
-            <span className="text-sm font-medium">
-              {Array(minPrice).fill('$').join('')} - {Array(maxPrice).fill('$').join('')}
-            </span>
-          </div>
-          <Slider
-            defaultValue={[minPrice, maxPrice]}
-            value={[minPrice, maxPrice]}
-            min={1}
-            max={4}
-            step={1}
-            onValueChange={handlePriceChange}
-            className="w-full"
-          />
-        </div>
+      <div className="bg-white p-4 border-t">
+        <Button onClick={onClose} className="w-full">
+          {t('apply_filters')}
+        </Button>
       </div>
     </div>
   );
