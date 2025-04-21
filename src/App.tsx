@@ -1,5 +1,5 @@
 
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import LandingPage from './pages/LandingPage';
 import Index from './pages/Index';
@@ -16,6 +16,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/restaurants" element={<Index />} />
         <Route path="/restaurant/:id" element={<RestaurantDetails />} />
+        {/* Add redirect for old URL pattern */}
+        <Route path="/details/:id" element={<Navigate to={location => `/restaurant/${location.pathname.split('/')[2]}`} replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </LanguageProvider>
