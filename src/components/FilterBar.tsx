@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
 import { useContext } from 'react';
-import { LanguageContext } from './LanguageSelector';
+import { LanguageContext, translations } from './LanguageSelector';
 import type { FilterOptions, MealType, DietaryRestriction, SortOption, DietaryPreference } from '../types';
 
 interface FilterBarProps {
@@ -115,11 +114,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
             <h4 className="text-sm font-medium">{t('dietary')}</h4>
             <div className="grid grid-cols-2 gap-2">
               {[
-                {value: 'none', label: 'none' as keyof typeof translations.en},
-                {value: 'vegetarian', label: 'vegetarian' as keyof typeof translations.en},
-                {value: 'vegan', label: 'vegan' as keyof typeof translations.en},
-                {value: 'gluten-free', label: 'gluten_free' as keyof typeof translations.en},
-                {value: 'halal', label: 'halal' as keyof typeof translations.en}
+                {value: 'none', label: 'none'},
+                {value: 'vegetarian', label: 'vegetarian'},
+                {value: 'vegan', label: 'vegan'},
+                {value: 'gluten-free', label: 'gluten_free'},
+                {value: 'halal', label: 'halal'}
               ].map((item) => (
                 <Button 
                   key={item.value}
@@ -129,7 +128,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                   className="justify-start"
                 >
                   {item.value === 'none' ? null : <Leaf className="w-4 h-4 mr-1" />}
-                  {t(item.label)}
+                  {t(item.label as keyof typeof translations.en)}
                 </Button>
               ))}
             </div>
