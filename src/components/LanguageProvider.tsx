@@ -7,17 +7,12 @@ interface LanguageProviderProps {
   children: React.ReactNode;
 }
 
-export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
+const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   // Initialize with the stored language preference or default to English
   const [language, setLanguage] = useState<Language>(() => {
     const stored = localStorage.getItem('preferredLanguage');
     return (stored === 'en' || stored === 'ja') ? stored : 'en';
   });
-
-  // Translation function
-  const t = (key: keyof typeof translations.en): string => {
-    return translations[language][key] || key;
-  };
 
   // Update document language when language changes
   useEffect(() => {
@@ -34,10 +29,16 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const setAppLanguage = (newLanguage: Language) => {
     if (newLanguage === 'en' || newLanguage === 'ja') {
       setLanguage(newLanguage);
+      localStorage.setItem('preferredLanguage', newLanguage);
     } else {
       console.error('Invalid language selected:', newLanguage);
       setLanguage('en'); // Default to English on invalid selection
     }
+  };
+
+  // Translation function
+  const t = (key: keyof typeof translations.en): string => {
+    return translations[language][key] || key;
   };
 
   return (

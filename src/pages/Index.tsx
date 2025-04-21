@@ -116,7 +116,7 @@ const Index = () => {
         <p className="text-sm text-muted-foreground mb-4 flex items-center justify-center gap-1">
           <MapPin className="w-3 h-3 inline-block" />
           {t('showing_results_near')} {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)} 
-          {` (${t('within_minutes').replace('{{minutes}}', locationState?.walkTime || 15)})`}
+          {` (${t('within_minutes').replace('{{minutes}}', String(locationState?.walkTime || 15))})`}
         </p>
       ) : (
          <p className="text-sm text-muted-foreground mb-4">{t('location_unavailable')}</p>

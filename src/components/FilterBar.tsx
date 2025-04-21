@@ -115,11 +115,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
             <h4 className="text-sm font-medium">{t('dietary')}</h4>
             <div className="grid grid-cols-2 gap-2">
               {[
-                {value: 'none', label: 'none'},
-                {value: 'vegetarian', label: 'vegetarian'},
-                {value: 'vegan', label: 'vegan'},
-                {value: 'gluten-free', label: 'gluten_free'},
-                {value: 'halal', label: 'halal'}
+                {value: 'none', label: 'none' as keyof typeof translations.en},
+                {value: 'vegetarian', label: 'vegetarian' as keyof typeof translations.en},
+                {value: 'vegan', label: 'vegan' as keyof typeof translations.en},
+                {value: 'gluten-free', label: 'gluten_free' as keyof typeof translations.en},
+                {value: 'halal', label: 'halal' as keyof typeof translations.en}
               ].map((item) => (
                 <Button 
                   key={item.value}
