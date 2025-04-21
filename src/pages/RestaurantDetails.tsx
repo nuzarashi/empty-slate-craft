@@ -20,7 +20,7 @@ const RestaurantDetails = () => {
   const { fetchRestaurantDetails } = useGoogleMaps({ location: null });
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { t } = useContext(LanguageContext);
+  const { t, language } = useContext(LanguageContext);
   
   // Custom hooks
   const { photoUrls } = useRestaurantPhotos(restaurant);
@@ -46,13 +46,15 @@ const RestaurantDetails = () => {
           console.log("Restaurant details loaded:", details.name, "with", details.reviews?.length || 0, "reviews");
           setRestaurant(details);
         }
+      } catch (error) {
+        console.error("Error loading restaurant details:", error);
       } finally {
         setLoading(false);
       }
     };
 
     loadRestaurantDetails();
-  }, [id, fetchRestaurantDetails, reviewSort]);
+  }, [id, fetchRestaurantDetails, reviewSort, language]);
 
   if (loading) {
     return (

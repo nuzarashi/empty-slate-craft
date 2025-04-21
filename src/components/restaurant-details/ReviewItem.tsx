@@ -11,7 +11,7 @@ interface ReviewItemProps {
 }
 
 const ReviewItem = ({ review, index, reviewSummary }: ReviewItemProps) => {
-  const { t } = useContext(LanguageContext);
+  const { t, language } = useContext(LanguageContext);
   const [expanded, setExpanded] = useState(false);
   
   // Character limit for collapsed view
