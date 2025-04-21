@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useContext } from 'react';
 import { generateReviewSummary } from '@/utils/review';
 import { createLocalSummary } from '@/utils/review/localSummary';
@@ -50,8 +49,12 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
   const getReviewSummary = async (reviewIndex: number, reviewText: string) => {
     if (reviewSummaries[reviewIndex] || !reviewText) return;
     
+    // Check if review text is in Japanese
+    const isJapanese = isJapaneseText(reviewText);
+    console.log(`Review ${reviewIndex} language detection: isJapanese=${isJapanese}, UI language=${language}`);
+    
     // Skip translation if the review is already in the target language
-    if (language === 'ja' && isJapaneseText(reviewText)) {
+    if (language === 'ja' && isJapanese) {
       console.log("Review is already in Japanese, skipping translation for index:", reviewIndex);
       setReviewSummaries(prev => ({
         ...prev,
@@ -61,9 +64,10 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     }
     
     // For English target language, if the text is in Japanese, we should translate
-    if (language === 'en' && isJapaneseText(reviewText)) {
+    if (language === 'en' && isJapanese) {
       // Need translation from Japanese to English
-    } else if (language === 'en') {
+      // Continue to the API call below
+    } else if (language === 'en' && !isJapanese) {
       // Already in English, no translation needed
       setReviewSummaries(prev => ({
         ...prev,
@@ -110,7 +114,7 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     }
   };
 
-  // Handle sort change - fixed to prevent timeouts and failures
+  // Handle sort change - improved to prioritize API-based sorting
   const handleSortChange = useCallback(async (value: string) => {
     console.log("Sorting changed to:", value);
     
@@ -122,56 +126,46 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     // Update the sort option state immediately
     setReviewSort(value as ReviewSortOption);
     setIsLoadingNewReviews(true);
+    setReviewSummaries({}); // Clear existing summaries when sort changes
     
-    if (!restaurant) {
+    if (!restaurant || !restaurant.place_id) {
+      console.error("Cannot sort reviews: Missing restaurant data or place_id");
       setIsLoadingNewReviews(false);
       return;
     }
     
     try {
-      // Use the proper ID for fetching (place_id or id)
-      const restaurantId = restaurant.place_id 
-        ? restaurant.place_id.startsWith('place_id:') 
-          ? restaurant.place_id 
-          : `place_id:${restaurant.place_id}` 
-        : restaurant.id;
-        
-      console.log("Fetching with restaurant ID:", restaurantId);
+      // Format the restaurant ID correctly for the API
+      let restaurantId = restaurant.place_id;
+      if (!restaurantId.startsWith('place_id:')) {
+        restaurantId = `place_id:${restaurantId}`;
+      }
       
-      // Fetch with a timeout
-      const timeoutId = setTimeout(() => {
-        console.log("Fetch timed out, sorting locally");
-        setIsLoadingNewReviews(false);
-        
-        // Fall back to local sorting if we have reviews
-        if (restaurant.reviews) {
-          sortReviewsLocally(restaurant.reviews, value as ReviewSortOption);
-        }
-      }, 8000);
+      console.log(`Fetching reviews with sort option: ${value}, language: ${language}, restaurantId: ${restaurantId}`);
       
-      // Attempt to fetch new reviews
+      // Always attempt to fetch from the API first
       const details = await fetchRestaurantDetails(restaurantId, value as ReviewSortOption);
       
-      // Clear the timeout since we got a response
-      clearTimeout(timeoutId);
-      
-      if (details && details.reviews) {
-        console.log("Got new review data, reviews count:", details.reviews.length);
-        // Clear existing review summaries to regenerate them
-        setReviewSummaries({});
-        // Set the sorted reviews directly from the response
+      if (details && details.reviews && details.reviews.length > 0) {
+        console.log(`Successfully fetched ${details.reviews.length} reviews with ${value} sorting`);
         setSortedReviews(details.reviews);
+        
         // Generate a summary of all reviews
         generateAllReviewsSummary(details.reviews);
       } else {
-        console.log("No reviews found in the response, falling back to local sorting");
-        if (restaurant.reviews) {
+        console.warn("No reviews returned from API or empty reviews array, falling back to local sorting");
+        
+        if (restaurant.reviews && restaurant.reviews.length > 0) {
           sortReviewsLocally(restaurant.reviews, value as ReviewSortOption);
+        } else {
+          setSortedReviews([]);
         }
       }
     } catch (error) {
       console.error("Error fetching restaurant details with new sort:", error);
-      toast.error("Failed to load reviews. Using existing data instead.");
+      toast.error(language === 'ja' 
+        ? "レビューの読み込みに失敗しました。既存のデータを使用します。"
+        : "Failed to load reviews. Using existing data instead.");
       
       // Fallback: sort existing reviews locally
       if (restaurant?.reviews) {
@@ -180,7 +174,7 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
     } finally {
       setIsLoadingNewReviews(false);
     }
-  }, [restaurant, fetchRestaurantDetails, reviewSort]);
+  }, [restaurant, fetchRestaurantDetails, reviewSort, language]);
 
   // Helper function for local sorting
   const sortReviewsLocally = (reviews: Review[], sortOption: ReviewSortOption) => {
@@ -206,12 +200,15 @@ export const useReviewHandling = ({ restaurant, fetchRestaurantDetails }: UseRev
       console.log("Restaurant reviews changed, sorting with current option:", reviewSort);
       sortReviewsLocally(restaurant.reviews, reviewSort);
     }
-  }, [restaurant?.reviews]);
+  }, [restaurant?.reviews, reviewSort]);
 
   // Generate review summaries for sorted reviews
   useEffect(() => {
     if (sortedReviews.length > 0) {
-      console.log("Generating summaries for", sortedReviews.length, "sorted reviews");
+      console.log("Generating summaries for", sortedReviews.length, "sorted reviews in language:", language);
+      // Clear existing summaries when language changes
+      setReviewSummaries({});
+      
       sortedReviews.forEach((review, index) => {
         getReviewSummary(index, review.text);
       });

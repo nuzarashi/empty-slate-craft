@@ -3,7 +3,7 @@ import type { Review } from '../../types';
 import { SUPABASE_EDGE_FUNCTION_URL, SUPABASE_ANON_KEY } from '../../config/api';
 import { createLocalSummary } from './localSummary';
 import type { CategorySummary } from './types';
-import { isJapaneseText } from './languageUtils';
+import { isJapaneseText, detectMachineTranslated } from './languageUtils';
 
 // Function to generate review summaries using OpenAI via Supabase Edge Function
 export const generateReviewSummary = async (reviews: Review[], language: string = 'en'): Promise<CategorySummary> => {
@@ -19,14 +19,21 @@ export const generateReviewSummary = async (reviews: Review[], language: string 
 
     console.log(`Generating review summary in language: ${language}`);
 
-    // Process reviews to respect the original language for Japanese reviews
+    // Process reviews to respect the original language
     const processedReviews = reviews.map(review => {
+      // Check if the review was machine-translated
+      const wasMachineTranslated = detectMachineTranslated(review.text);
+      
       // If the UI language is set to Japanese but the review is already in Japanese, 
       // mark it to not be translated
       const isJapanese = isJapaneseText(review.text);
+      
+      console.log(`Review language detection - isJapanese: ${isJapanese}, wasMachineTranslated: ${wasMachineTranslated}`, 
+                 `Sample: ${review.text.substring(0, 30)}...`);
+                 
       return {
         ...review,
-        preserveOriginal: isJapanese
+        preserveOriginal: isJapanese || wasMachineTranslated
       };
     });
 

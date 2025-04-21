@@ -3,6 +3,7 @@ import React, { useState, useContext } from 'react';
 import { Star, ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { LanguageContext } from '@/components/LanguageSelector';
 import type { Review } from '@/types';
+import { isJapaneseText } from '@/utils/review/languageUtils';
 
 interface ReviewItemProps {
   review: Review;
@@ -21,6 +22,10 @@ const ReviewItem = ({ review, index, reviewSummary }: ReviewItemProps) => {
   const isLongReview = reviewSummary 
     ? reviewSummary.length > TEXT_LIMIT 
     : review.text.length > TEXT_LIMIT;
+  
+  // Check if text is in Japanese (log for debugging)
+  const isJapanese = isJapaneseText(review.text);
+  console.log(`Review ${index} language check - UI language: ${language}, isJapanese: ${isJapanese}, text sample: "${review.text.substring(0, 30)}..."`);
   
   // Get display text based on expansion state
   const getDisplayText = () => {
