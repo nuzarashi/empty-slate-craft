@@ -72,7 +72,7 @@ export const createLocalSummary = (reviews: Review[], language: string = 'en'): 
   
   if (foodMentions > 0) {
     foodSentiment = avgRating >= 4 
-      ? (language === 'ja' ? '美味', '絶品' : 'praised') 
+      ? (language === 'ja' ? '美味' : 'praised') 
       : avgRating >= 3 
         ? (language === 'ja' ? '満足' : 'decent') 
         : (language === 'ja' ? '不味い' : 'criticized');
