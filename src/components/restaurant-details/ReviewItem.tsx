@@ -1,7 +1,7 @@
-
 import React, { useState, useContext } from 'react';
 import { Star, ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { LanguageContext } from '@/contexts/LanguageContext';
+import { isJapaneseText } from '@/utils/review/languageUtils';
 import type { Review } from '@/types';
 
 interface ReviewItemProps {
@@ -10,7 +10,7 @@ interface ReviewItemProps {
 }
 
 const ReviewItem = ({ review, index }: ReviewItemProps) => {
-  const { t } = useContext(LanguageContext);
+  const { t, language } = useContext(LanguageContext);
   const [expanded, setExpanded] = useState(false);
   
   // Character limit for collapsed view
@@ -19,8 +19,20 @@ const ReviewItem = ({ review, index }: ReviewItemProps) => {
   // Determine if review needs a "Read more" button
   const isLongReview = review.text.length > TEXT_LIMIT;
   
-  // Get display text based on expansion state
+  // Check if the review is already in Japanese
+  const isJapanese = isJapaneseText(review.text);
+  
+  // Get display text based on expansion state and language
   const getDisplayText = () => {
+    // If the UI is in Japanese and the review is already in Japanese,
+    // or if the UI is in English, show the original text
+    if ((language === 'ja' && isJapanese) || language === 'en') {
+      return expanded || !isLongReview 
+        ? review.text 
+        : `${review.text.substring(0, TEXT_LIMIT)}...`;
+    }
+    
+    // Otherwise show the original text (will be translated by the API later)
     return expanded || !isLongReview 
       ? review.text 
       : `${review.text.substring(0, TEXT_LIMIT)}...`;

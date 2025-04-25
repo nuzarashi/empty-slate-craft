@@ -1,4 +1,3 @@
-
 // Helper function to detect if text is Japanese
 export const isJapaneseText = (text: string): boolean => {
   if (!text) return false;
@@ -13,8 +12,9 @@ export const isJapaneseText = (text: string): boolean => {
   const japaneseMatches = text.match(new RegExp(japaneseRegex, 'g'));
   const japaneseCount = japaneseMatches ? japaneseMatches.length : 0;
   
-  // If more than 15% of the characters are Japanese, consider it Japanese text
-  return japaneseCount / totalLength > 0.15;
+  // If more than 20% of the characters are Japanese, consider it Japanese text
+  // Increased from 15% to 20% to be more confident about the detection
+  return japaneseCount / totalLength > 0.20;
 };
 
 // Detect if review was likely machine-translated already
