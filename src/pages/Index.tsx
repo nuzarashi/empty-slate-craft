@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MapPin, Filter, AlertCircle, WifiOff, Loader2 } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
-import type { FilterOptions, DietaryPreference } from '@/types';
+import type { FilterOptions } from '@/types';
 import { LanguageContext } from '@/components/LanguageSelector';
+import { DiningPreferences } from '@/components/PreferencesMenu';
 
 const Index = () => {
   const routerLocation = useReactRouterLocation();
@@ -35,9 +36,7 @@ const Index = () => {
   const {
     restaurants: filteredRestaurants,
     filters,
-    updateFilters,
-    dietaryPreferences,
-    setDietaryPreferences
+    updateFilters
   } = useRestaurantsHook(
       allRestaurants,
       hasMorePages,
@@ -51,12 +50,12 @@ const Index = () => {
     updateFilters(newFilters);
   }, [updateFilters]);
 
-  const handlePreferencesChange = useCallback((newPreferences: { dietary: DietaryPreference, budget: number[] }) => {
-      setDietaryPreferences(newPreferences.dietary);
-      const [min, max] = newPreferences.budget;
-      const priceLevels = Array.from({ length: max - min + 1 }, (_, i) => min + i);
-      updateFilters({ priceLevel: priceLevels });
-  }, [updateFilters, setDietaryPreferences]);
+  const handlePreferencesChange = useCallback((newPreferences: DiningPreferences) => {
+    updateFilters({ mealType: newPreferences.mealType });
+    const [min, max] = newPreferences.budget;
+    const priceLevels = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+    updateFilters({ priceLevel: priceLevels });
+  }, [updateFilters]);
 
   const finalRestaurants = filteredRestaurants.filter(r =>
       r.duration === undefined || r.duration === null || r.duration <= maxDuration
@@ -157,8 +156,6 @@ const Index = () => {
         onClose={() => setIsFilterBarOpen(false)}
         currentFilters={filters}
         onFilterChange={handleFilterChange}
-        onPreferencesChange={handlePreferencesChange}
-        currentDietaryPreferences={dietaryPreferences}
       />
     </div>
   );

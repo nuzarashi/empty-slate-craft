@@ -1,17 +1,10 @@
+
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import type { Restaurant, FilterOptions, MealType, DietaryRestriction, DietaryPreference } from '../types';
+import type { Restaurant, FilterOptions, MealType } from '../types';
 
 const mealTypeKeywords: Record<MealType, string[]> = {
   main: ['restaurant', 'food', 'meal', 'dinner', 'lunch'],
   drinking: ['bar', 'pub', 'izakaya', 'tavern', 'brewery', 'lounge', 'night_club']
-};
-
-const dietaryKeywords: Record<DietaryRestriction, string[]> = {
-  none: [],
-  vegetarian: ['vegetarian', 'veg'],
-  vegan: ['vegan'],
-  'gluten-free': ['gluten-free', 'gluten free', 'gf'],
-  halal: ['halal']
 };
 
 // Define a threshold for "few" results when drinking filter is active
@@ -25,24 +18,27 @@ const useRestaurants = (
 ) => {
   const [filters, setFilters] = useState<FilterOptions>({
     mealType: 'main',
-    dietary: 'none',
     priceLevel: [1, 2, 3, 4],
     sortBy: 'distance',
     open: false,
     minRating: 0
   });
 
-  const [dietaryPreferences, setDietaryPreferences] = useState<DietaryPreference | null>(null);
   const [needsMoreDrinkingResults, setNeedsMoreDrinkingResults] = useState(false);
 
-  // Load saved dietary preferences from localStorage
+  // Load saved preferences from localStorage
   useEffect(() => {
     const savedPreferences = localStorage.getItem('diningPreferences');
     if (savedPreferences) {
       try {
         const preferences = JSON.parse(savedPreferences);
-        if (preferences.dietary) {
-          setDietaryPreferences(preferences.dietary);
+        
+        // Set mealType from preferences
+        if (preferences.mealType) {
+          setFilters(prev => ({
+            ...prev,
+            mealType: preferences.mealType
+          }));
         }
 
         // Also update price levels based on budget
@@ -81,59 +77,13 @@ const useRestaurants = (
       // Filter by meal type
       if (filters.mealType === 'drinking') {
         if (!restaurant.isDrinking) {
-           return false; // Must be flagged as drinking
+          return false; // Must be flagged as drinking
         }
       } else if (filters.mealType === 'main' && restaurant.isDrinking) {
          // If looking for 'main' but it's a drinking place, check if it also serves food
          const hasMainFoodType = restaurant.types.some(type => mealTypeKeywords.main.includes(type));
          if (!hasMainFoodType) {
              return false;
-         }
-      }
-
-
-      // Filter by dietary restrictions from the filter menu
-      if (filters.dietary !== 'none') {
-        const dietaryKeywordList = dietaryKeywords[filters.dietary];
-        // Check if the restaurant's dietaryPreferences object (if present) matches
-        let matchesDietaryDirectly = false;
-        if (restaurant.dietaryPreferences) {
-            if (filters.dietary === 'vegetarian' && restaurant.dietaryPreferences.vegetarian) matchesDietaryDirectly = true;
-            if (filters.dietary === 'vegan' && restaurant.dietaryPreferences.vegan) matchesDietaryDirectly = true;
-            if (filters.dietary === 'gluten-free' && restaurant.dietaryPreferences.glutenFree) matchesDietaryDirectly = true;
-            if (filters.dietary === 'halal' && restaurant.dietaryPreferences.halal) matchesDietaryDirectly = true;
-            // Add other direct checks if needed
-        }
-
-        // Fallback to keyword check if direct check fails or dietaryPreferences is absent
-        const matchesKeywords = dietaryKeywordList.some(keyword =>
-          (restaurant.name.toLowerCase().includes(keyword)) ||
-          (restaurant.types.some(type => type.toLowerCase().includes(keyword)))
-        );
-
-        if (!matchesDietaryDirectly && !matchesKeywords) {
-          return false;
-        }
-      }
-
-      // Filter by dietary preferences from preferences menu
-      if (dietaryPreferences) {
-        let requiredMatch = true; // Assume it matches until proven otherwise
-        let hasPreferencesSet = false;
-         for (const [key, isRequired] of Object.entries(dietaryPreferences)) {
-             if (isRequired) {
-                hasPreferencesSet = true;
-                const prefKey = key as keyof DietaryPreference;
-                // If a preference is required, the restaurant MUST have it marked as true
-                if (!restaurant.dietaryPreferences || !restaurant.dietaryPreferences[prefKey]) {
-                   requiredMatch = false;
-                   break;
-                }
-             }
-         }
-         // Only apply this filter if at least one preference is set to true
-         if (hasPreferencesSet && !requiredMatch) {
-            return false;
          }
       }
 
@@ -167,17 +117,16 @@ const useRestaurants = (
           return (a.distance ?? Infinity) - (b.distance ?? Infinity); // Handle potential undefined distance
       }
     });
-  }, [restaurants, filters, dietaryPreferences, hasMorePages, isLoading]); // Include isLoading dependency
+  }, [restaurants, filters, hasMorePages, isLoading]); // Include isLoading dependency
 
   // Effect to automatically load more if needed for drinking results
-   useEffect(() => {
-     // Only trigger loadMore if the flag is true AND we are not currently loading
-     if (needsMoreDrinkingResults && !isLoading) {
-       console.log(`Filter requires more drinking results (<span class="math-inline">\{filteredRestaurants\.length\}/</span>{MIN_DRINKING_RESULTS_THRESHOLD}), automatically loading more...`);
-       loadMoreCallback();
-     }
-   }, [needsMoreDrinkingResults, isLoading, loadMoreCallback, filteredRestaurants.length]); // Add dependencies
-
+  useEffect(() => {
+    // Only trigger loadMore if the flag is true AND we are not currently loading
+    if (needsMoreDrinkingResults && !isLoading) {
+      console.log(`Filter requires more drinking results (${filteredRestaurants.length}/${MIN_DRINKING_RESULTS_THRESHOLD}), automatically loading more...`);
+      loadMoreCallback();
+    }
+  }, [needsMoreDrinkingResults, isLoading, loadMoreCallback, filteredRestaurants.length]); // Add dependencies
 
   const updateFilters = useCallback((newFilters: Partial<FilterOptions>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -186,9 +135,7 @@ const useRestaurants = (
   return {
     restaurants: filteredRestaurants,
     filters,
-    updateFilters,
-    dietaryPreferences,
-    setDietaryPreferences
+    updateFilters
   };
 };
 

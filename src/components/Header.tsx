@@ -14,15 +14,7 @@ interface HeaderProps {
 const defaultPreferences: DiningPreferences = {
   budget: [1, 4], // Min and max budget
   maxDistance: [15], // Max distance in minutes
-  dietary: {
-    vegan: false,
-    vegetarian: false,
-    glutenFree: false,
-    lowCarb: false,
-    noSeafood: false,
-    noRawFood: false,
-    halal: false,
-  }
+  mealType: 'main'
 };
 
 const Header: React.FC<HeaderProps> = ({ locationName }) => {

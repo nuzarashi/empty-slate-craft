@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,31 +23,13 @@ import { Settings } from 'lucide-react';
 export interface DiningPreferences {
   budget: number[];
   maxDistance: number[];
-  dietary: {
-    vegan: boolean;
-    vegetarian: boolean;
-    glutenFree: boolean;
-    lowCarb: boolean;
-    noSeafood: boolean;
-    noRawFood: boolean;
-    halal: boolean;
-  };
+  mealType: 'main' | 'drinking';
 }
 
 interface PreferencesMenuProps {
   initialPreferences: DiningPreferences;
   onPreferencesChange: (preferences: DiningPreferences) => void;
 }
-
-const dietaryOptions = [
-  { id: 'vegan', label: 'Vegan' },
-  { id: 'vegetarian', label: 'Vegetarian' },
-  { id: 'glutenFree', label: 'Gluten Free' },
-  { id: 'lowCarb', label: 'Low Carb' },
-  { id: 'noSeafood', label: 'No Seafood' },
-  { id: 'noRawFood', label: 'No Raw Food' },
-  { id: 'halal', label: 'Halal' },
-] as const;
 
 const PreferencesMenu: React.FC<PreferencesMenuProps> = ({ 
   initialPreferences, 
@@ -121,31 +103,39 @@ const PreferencesMenu: React.FC<PreferencesMenuProps> = ({
               )}
             />
             
-            <div className="space-y-2">
-              <FormLabel>Dietary Preferences</FormLabel>
-              <div className="grid grid-cols-1 gap-2">
-                {dietaryOptions.map((option) => (
-                  <FormField
-                    key={option.id}
-                    control={form.control}
-                    name={`dietary.${option.id as keyof DiningPreferences['dietary']}`}
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+            <FormField
+              control={form.control}
+              name="mealType"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Meal Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <RadioGroupItem value="main" />
                         </FormControl>
-                        <FormLabel className="text-sm font-normal">
-                          {option.label}
+                        <FormLabel className="font-normal">
+                          Main Meal
                         </FormLabel>
                       </FormItem>
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="drinking" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Drinks (Nijikai)
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </form>
         </Form>
       </DropdownMenuContent>

@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import type { Location, Restaurant, DietaryPreference } from '../types';
+import type { Location, Restaurant } from '../types';
 import {
   fetchNearbyRestaurants,
   fetchRestaurantDetails as getRestaurantDetails
@@ -9,17 +10,6 @@ import {
 interface UseGoogleMapsProps {
   location: Location | null;
 }
-
-// Dietary keywords to look for in restaurant details
-const dietaryKeywords: Record<keyof DietaryPreference, string[]> = {
-  vegan: ['vegan', 'plant-based', 'dairy-free', 'no animal products'],
-  vegetarian: ['vegetarian', 'veggie', 'no meat'],
-  glutenFree: ['gluten-free', 'gluten free', 'gf', 'no gluten'],
-  lowCarb: ['low carb', 'keto', 'low-carb', 'low-carbohydrate'],
-  noSeafood: ['no seafood', 'no fish', 'seafood-free'],
-  noRawFood: ['no raw food', 'cooked only', 'no raw fish', 'no raw meat'],
-  halal: ['halal', 'muslim-friendly', 'halal-certified']
-};
 
 // Drinking establishment keywords - ADDED 'yakitori'
 const drinkingKeywords = [
@@ -65,42 +55,6 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
     );
   };
 
-  // Detect dietary options from restaurant details
-  const detectDietaryOptions = (restaurant: Restaurant): DietaryPreference | undefined => {
-    if (!restaurant) return undefined;
-
-    const detailsText = [
-      restaurant.name,
-      restaurant.vicinity,
-      ...(restaurant.types || []),
-      // Add any other fields that might contain dietary information
-    ].join(' ').toLowerCase();
-
-    // Identify matching dietary preferences
-    const matchedPreferences: DietaryPreference = {
-      vegan: false,
-      vegetarian: false,
-      glutenFree: false,
-      lowCarb: false,
-      noSeafood: false,
-      noRawFood: false,
-      halal: false
-    };
-
-    // Check for each dietary preference
-    Object.entries(dietaryKeywords).forEach(([key, keywords]) => {
-      const prefKey = key as keyof DietaryPreference;
-      matchedPreferences[prefKey] = keywords.some(keyword => detailsText.includes(keyword));
-
-      // If a restaurant is vegan, it's also vegetarian
-      if (prefKey === 'vegan' && matchedPreferences.vegan) {
-        matchedPreferences.vegetarian = true;
-      }
-    });
-
-    return matchedPreferences;
-  };
-
   const fetchRestaurants = useCallback(async (pageToken?: string) => {
     if (!location) {
       console.log("Cannot fetch restaurants: No location provided");
@@ -125,9 +79,8 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
          }
       }
 
-      // Add dietary preferences and drinking type to each restaurant
+      // Add drinking type to each restaurant
       const enhancedRestaurants = newRestaurants.map(restaurant => {
-        const dietaryPreferences = detectDietaryOptions(restaurant);
         const isDrinking = isDrinkingEstablishment(restaurant);
 
         // Add drinking type to restaurant types if it's detected as a drinking establishment
@@ -139,7 +92,6 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
         return {
           ...restaurant,
           types,
-          dietaryPreferences,
           isDrinking
         };
       });
@@ -156,16 +108,15 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
     }
   }, [location]);
 
-  const fetchRestaurantDetails = useCallback(async (restaurantId: string, reviewSort?: string) => {
+  const fetchRestaurantDetails = useCallback(async (restaurantId: string) => {
     try {
-      console.log("Fetching details for restaurant ID:", restaurantId, "with sort:", reviewSort);
+      console.log("Fetching details for restaurant ID:", restaurantId);
       // Use place_id if available, otherwise fall back to id
       const placeId = restaurantId.includes("place_id:") ? restaurantId.replace("place_id:", "") : restaurantId;
-      const details = await getRestaurantDetails(placeId, reviewSort);
+      const details = await getRestaurantDetails(placeId);
 
       if (details) {
-        // Add dietary preferences and drinking type to the restaurant details
-        const dietaryPreferences = detectDietaryOptions(details);
+        // Add drinking type to the restaurant details
         const isDrinking = isDrinkingEstablishment(details);
 
         // Add drinking type to restaurant types if it's detected as a drinking establishment
@@ -177,7 +128,6 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
         return {
           ...details,
           types,
-          dietaryPreferences,
           isDrinking
         };
       }
@@ -207,16 +157,15 @@ export const useGoogleMaps = ({ location }: UseGoogleMapsProps) => {
     }
   }, [nextPageToken, loading, fetchRestaurants]); // Added loading and fetchRestaurants
 
-
   // Public API of the hook
-   return {
-     restaurants,
-     loading,
-     error,
-     hasMore: !!nextPageToken, // Expose derived state
-     loadMore, // Expose loadMore callback
-     fetchRestaurantDetails // Expose details fetcher
-   };
+  return {
+    restaurants,
+    loading,
+    error,
+    hasMore: !!nextPageToken, // Expose derived state
+    loadMore, // Expose loadMore callback
+    fetchRestaurantDetails // Expose details fetcher
+  };
 };
 
 export default useGoogleMaps;

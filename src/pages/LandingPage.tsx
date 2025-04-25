@@ -5,10 +5,9 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Header from '../components/Header';
 import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { DietaryPreference } from '@/types';
 import { toast } from 'sonner';
 import { LanguageContext } from '@/components/LanguageSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,18 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 type PreferencesValues = {
   budget: number[];
   maxDistance: number[];
-  dietary: DietaryPreference;
+  mealType: 'main' | 'drinking';
 };
-
-const dietaryOptions = [
-  { id: 'vegan', label: 'vegan' },
-  { id: 'vegetarian', label: 'vegetarian' },
-  { id: 'glutenFree', label: 'gluten_free' },
-  { id: 'lowCarb', label: 'low_carb' },
-  { id: 'noSeafood', label: 'no_seafood' },
-  { id: 'noRawFood', label: 'no_raw_food' },
-  { id: 'halal', label: 'halal' },
-] as const;
 
 const LandingPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,15 +26,7 @@ const LandingPage = () => {
     defaultValues: {
       budget: [1, 4], // Min and max budget
       maxDistance: [15], // Max walking distance in minutes
-      dietary: {
-        vegan: false,
-        vegetarian: false,
-        glutenFree: false,
-        lowCarb: false,
-        noSeafood: false,
-        noRawFood: false,
-        halal: false,
-      }
+      mealType: 'main'
     }
   });
 
@@ -138,32 +119,39 @@ const LandingPage = () => {
                     )}
                   />
                   
-                  <div className="space-y-3">
-                    <FormLabel className="font-medium text-food-dark">{t('dietary_preferences')}</FormLabel>
-                    <div className="grid grid-cols-2 gap-3">
-                      {dietaryOptions.map((option) => (
-                        <FormField
-                          key={option.id}
-                          control={form.control}
-                          name={`dietary.${option.id}` as any}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3 space-y-0 bg-white/50 p-3 rounded-lg hover:bg-white/80 transition-colors">
+                  <FormField
+                    control={form.control}
+                    name="mealType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="font-medium text-food-dark">{t('meal_type')}</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="grid grid-cols-2 gap-4"
+                          >
+                            <FormItem className="flex items-center space-x-2 space-y-0 bg-white/50 p-3 rounded-lg hover:bg-white/80 transition-colors">
                               <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-food-orange data-[state=checked]:border-food-orange"
-                                />
+                                <RadioGroupItem value="main" className="text-food-orange" />
                               </FormControl>
-                              <FormLabel className="text-sm font-medium cursor-pointer text-food-dark">
-                                {t(option.label)}
+                              <FormLabel className="font-medium cursor-pointer text-food-dark">
+                                {t('main_meal')}
                               </FormLabel>
                             </FormItem>
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                            <FormItem className="flex items-center space-x-2 space-y-0 bg-white/50 p-3 rounded-lg hover:bg-white/80 transition-colors">
+                              <FormControl>
+                                <RadioGroupItem value="drinking" className="text-food-orange" />
+                              </FormControl>
+                              <FormLabel className="font-medium cursor-pointer text-food-dark">
+                                {t('drinks')}
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   
                   <Button 
                     type="submit"
