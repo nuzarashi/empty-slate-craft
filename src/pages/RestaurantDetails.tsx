@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -22,26 +21,21 @@ const RestaurantDetails = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { t, language } = useContext(LanguageContext);
   
-  // Custom hooks
   const { photoUrls } = useRestaurantPhotos(restaurant);
   const { 
-    reviewSort, 
     sortedReviews, 
     reviewSummaries, 
     isGeneratingMainSummary, 
     categorySummary,
-    isLoadingNewReviews,
-    handleSortChange
-  } = useReviewHandling({ restaurant, fetchRestaurantDetails });
+  } = useReviewHandling({ restaurant });
 
   useEffect(() => {
     const loadRestaurantDetails = async () => {
       if (!id) return;
       setLoading(true);
       try {
-        console.log("Fetching restaurant details for ID:", id, "with sort:", reviewSort);
-        // Pass the current review sort option
-        const details = await fetchRestaurantDetails(id, reviewSort);
+        console.log("Fetching restaurant details for ID:", id);
+        const details = await fetchRestaurantDetails(id);
         if (details) {
           console.log("Restaurant details loaded:", details.name, "with", details.reviews?.length || 0, "reviews");
           setRestaurant(details);
@@ -54,7 +48,7 @@ const RestaurantDetails = () => {
     };
 
     loadRestaurantDetails();
-  }, [id, fetchRestaurantDetails, reviewSort, language]);
+  }, [id, fetchRestaurantDetails, language]);
 
   if (loading) {
     return (
@@ -111,9 +105,6 @@ const RestaurantDetails = () => {
         {restaurant?.reviews && restaurant.reviews.length > 0 && (
           <ReviewList 
             sortedReviews={sortedReviews}
-            reviewSort={reviewSort}
-            handleSortChange={handleSortChange}
-            isLoadingNewReviews={isLoadingNewReviews}
             reviewSummaries={reviewSummaries}
           />
         )}

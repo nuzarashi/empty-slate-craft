@@ -4,24 +4,14 @@ export interface Location {
   lng: number;
 }
 
-export interface DietaryPreference {
-  vegan: boolean;
-  vegetarian: boolean;
-  glutenFree: boolean;
-  lowCarb: boolean;
-  noSeafood: boolean;
-  noRawFood: boolean;
-  halal: boolean;
-}
-
 export interface Restaurant {
   id: string;
-  place_id?: string; // Added place_id for compatibility with Google API
+  place_id?: string;
   name: string;
   vicinity: string;
   rating: number;
   user_ratings_total: number;
-  price_level?: number; // 1-4 representing $ to $$$$
+  price_level?: number;
   photos?: {
     photo_reference: string;
     width: number;
@@ -34,12 +24,11 @@ export interface Restaurant {
     open_now?: boolean;
   };
   types: string[];
-  distance?: number; // Walking distance in meters (added by our app)
-  duration?: number; // Walking duration in seconds (added by our app)
+  distance?: number;
+  duration?: number;
   reviews?: Review[];
-  reviewSummary?: string; // AI-generated summary (added by our app)
-  dietaryPreferences?: DietaryPreference; // Added dietary preferences
-  isDrinking?: boolean; // Flag for drinking establishments
+  reviewSummary?: string;
+  isDrinking?: boolean;
 }
 
 export interface Review {
@@ -51,17 +40,14 @@ export interface Review {
 }
 
 export type MealType = 'main' | 'drinking';
-export type DietaryRestriction = 'none' | 'vegetarian' | 'vegan' | 'gluten-free' | 'halal';
 export type SortOption = 'distance' | 'rating' | 'price-asc' | 'price-desc';
-export type ReviewSortOption = 'recent' | 'helpful';
 
 export interface FilterOptions {
   mealType: MealType;
-  dietary: DietaryRestriction;
-  priceLevel: number[]; // Array of price levels (1-4)
+  priceLevel: number[];
   sortBy: SortOption;
-  open: boolean; // Only show open restaurants
-  minRating: number; // Minimum star rating (1-5)
+  open: boolean;
+  minRating: number;
 }
 
 export interface CategorySummary {

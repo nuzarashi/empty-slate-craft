@@ -1,39 +1,26 @@
+
 import React from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { 
-  Filter, 
-  Coffee, 
-  Beer, 
+  Utensils, 
+  Wine,
   SortAsc, 
   MapPin, 
   Star, 
   DollarSign, 
   Clock,
-  Leaf
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { cn } from '@/lib/utils';
 import { useContext } from 'react';
-import { LanguageContext, translations } from './LanguageSelector';
-import type { FilterOptions, MealType, DietaryRestriction, SortOption, DietaryPreference } from '../types';
+import { LanguageContext } from './LanguageSelector';
+import type { FilterOptions, MealType, SortOption } from '../types';
 
 interface FilterBarProps {
   isOpen: boolean;
   onClose: () => void;
   currentFilters: FilterOptions;
   onFilterChange: (newFilters: Partial<FilterOptions>) => void;
-  onPreferencesChange: (newPreferences: { dietary: DietaryPreference, budget: number[] }) => void;
-  currentDietaryPreferences: DietaryPreference;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({ 
@@ -41,17 +28,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
   onClose, 
   currentFilters, 
   onFilterChange, 
-  onPreferencesChange,
-  currentDietaryPreferences
 }) => {
   const { t } = useContext(LanguageContext);
   
   const handleMealTypeChange = (mealType: MealType) => {
     updateFilters({ mealType });
-  };
-
-  const handleDietaryChange = (dietary: DietaryRestriction) => {
-    updateFilters({ dietary });
   };
 
   const handleSortChange = (sortBy: SortOption) => {
@@ -95,7 +76,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 className="flex-1 gap-1"
                 onClick={() => handleMealTypeChange('main')}
               >
-                <Coffee className="w-4 h-4" />
+                <Utensils className="w-4 h-4" />
                 <span>{t('main_meal')}</span>
               </Button>
               <Button 
@@ -104,33 +85,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 className="flex-1 gap-1"
                 onClick={() => handleMealTypeChange('drinking')}
               >
-                <Beer className="w-4 h-4" />
+                <Wine className="w-4 h-4" />
                 <span>{t('drinks')}</span>
               </Button>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">{t('dietary')}</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                {value: 'none', label: 'none'},
-                {value: 'vegetarian', label: 'vegetarian'},
-                {value: 'vegan', label: 'vegan'},
-                {value: 'gluten-free', label: 'gluten_free'},
-                {value: 'halal', label: 'halal'}
-              ].map((item) => (
-                <Button 
-                  key={item.value}
-                  variant={currentFilters.dietary === item.value ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => handleDietaryChange(item.value as DietaryRestriction)}
-                  className="justify-start"
-                >
-                  {item.value === 'none' ? null : <Leaf className="w-4 h-4 mr-1" />}
-                  {t(item.label as keyof typeof translations.en)}
-                </Button>
-              ))}
             </div>
           </div>
           
