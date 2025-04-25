@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Clock } from 'lucide-react';
@@ -25,9 +26,10 @@ const RestaurantCard = ({ restaurant, onClick }: RestaurantCardProps) => {
     types = [],
   } = restaurant;
 
-  // Get photo URL or placeholder
-  const photoUrl = photos && photos.length > 0
-    ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photos[0].photo_reference}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`
+  // Get photo URL with error handling
+  const photoReference = photos && photos.length > 0 ? photos[0].photo_reference : null;
+  const photoUrl = photoReference 
+    ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=AIzaSyBzl37_a_xWe3MbIJlPJOfO7Il--DSO3AM`
     : `https://via.placeholder.com/400x200/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
 
   // Format price level as $ symbols
@@ -56,7 +58,10 @@ const RestaurantCard = ({ restaurant, onClick }: RestaurantCardProps) => {
             alt={name} 
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.src = `https://via.placeholder.com/400x200/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
+              const target = e.currentTarget;
+              if (target.src !== `https://via.placeholder.com/400x200/F4D35E/2D3047?text=${encodeURIComponent(name)}`) {
+                target.src = `https://via.placeholder.com/400x200/F4D35E/2D3047?text=${encodeURIComponent(name)}`;
+              }
             }}
           />
           {priceDisplay && (

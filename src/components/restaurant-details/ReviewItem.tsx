@@ -3,47 +3,27 @@ import React, { useState, useContext } from 'react';
 import { Star, ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { LanguageContext } from '@/contexts/LanguageContext';
 import type { Review } from '@/types';
-import { isJapaneseText } from '@/utils/review/languageUtils';
 
 interface ReviewItemProps {
   review: Review;
   index: number;
-  reviewSummary: string | undefined;
 }
 
-const ReviewItem = ({ review, index, reviewSummary }: ReviewItemProps) => {
-  const { t, language } = useContext(LanguageContext);
+const ReviewItem = ({ review, index }: ReviewItemProps) => {
+  const { t } = useContext(LanguageContext);
   const [expanded, setExpanded] = useState(false);
   
   // Character limit for collapsed view
   const TEXT_LIMIT = 100;
   
   // Determine if review needs a "Read more" button
-  const isLongReview = reviewSummary 
-    ? reviewSummary.length > TEXT_LIMIT 
-    : review.text.length > TEXT_LIMIT;
-  
-  // Check if text is in Japanese (log for debugging)
-  const isJapanese = isJapaneseText(review.text);
-  console.log(`Review ${index} language check - UI language: ${language}, isJapanese: ${isJapanese}, text sample: "${review.text.substring(0, 30)}..."`);
+  const isLongReview = review.text.length > TEXT_LIMIT;
   
   // Get display text based on expansion state
   const getDisplayText = () => {
-    if (reviewSummary) {
-      return expanded || !isLongReview 
-        ? reviewSummary 
-        : `${reviewSummary.substring(0, TEXT_LIMIT)}...`;
-    } else {
-      return (
-        <>
-          <span className="text-xs text-muted-foreground">{t('generating_ai_summary')}</span>
-          <br />
-          {expanded || !isLongReview 
-            ? review.text 
-            : `${review.text.substring(0, TEXT_LIMIT)}...`}
-        </>
-      );
-    }
+    return expanded || !isLongReview 
+      ? review.text 
+      : `${review.text.substring(0, TEXT_LIMIT)}...`;
   };
 
   return (

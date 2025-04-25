@@ -1,19 +1,15 @@
 
 import React from 'react';
 import { useContext } from 'react';
-import { LanguageContext } from '../../contexts/LanguageContext';
+import { LanguageContext } from '@/contexts/LanguageContext';
 import ReviewItem from './ReviewItem';
 import type { Review } from '@/types';
 
 interface ReviewListProps {
   sortedReviews: Review[];
-  reviewSummaries: {[key: string]: string};
 }
 
-const ReviewList = ({ 
-  sortedReviews,
-  reviewSummaries 
-}: ReviewListProps) => {
+const ReviewList = ({ sortedReviews }: ReviewListProps) => {
   const { t } = useContext(LanguageContext);
 
   if (sortedReviews.length === 0) return null;
@@ -29,8 +25,7 @@ const ReviewList = ({
           <ReviewItem 
             key={index} 
             review={review} 
-            index={index} 
-            reviewSummary={reviewSummaries[index]} 
+            index={index}
           />
         ))}
       </div>

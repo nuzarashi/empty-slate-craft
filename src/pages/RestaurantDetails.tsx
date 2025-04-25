@@ -6,13 +6,11 @@ import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import useGoogleMaps from '@/hooks/useGoogleMaps';
-import type { Restaurant } from '@/types';
+import type { Restaurant, Review } from '@/types';
 import { LanguageContext } from '@/contexts/LanguageContext';
 import PhotoCarousel from '@/components/restaurant-details/PhotoCarousel';
 import RestaurantHeader from '@/components/restaurant-details/RestaurantHeader';
-import ReviewSummary from '@/components/restaurant-details/ReviewSummary';
 import ReviewList from '@/components/restaurant-details/ReviewList';
-import { useReviewHandling } from '@/hooks/useReviewHandling';
 import { useRestaurantPhotos } from '@/hooks/useRestaurantPhotos';
 
 const RestaurantDetails = () => {
@@ -23,12 +21,9 @@ const RestaurantDetails = () => {
   const { t, language } = useContext(LanguageContext);
   
   const { photoUrls } = useRestaurantPhotos(restaurant);
-  const { 
-    sortedReviews, 
-    reviewSummaries, 
-    isGeneratingMainSummary, 
-    categorySummary,
-  } = useReviewHandling({ restaurant });
+  
+  // Simple sorting for reviews
+  const [sortedReviews, setSortedReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     const loadRestaurantDetails = async () => {
@@ -40,6 +35,12 @@ const RestaurantDetails = () => {
         if (details) {
           console.log("Restaurant details loaded:", details.name, "with", details.reviews?.length || 0, "reviews");
           setRestaurant(details);
+          
+          // Sort reviews by rating (highest first)
+          if (details.reviews && details.reviews.length > 0) {
+            const sorted = [...details.reviews].sort((a, b) => b.rating - a.rating);
+            setSortedReviews(sorted);
+          }
         }
       } catch (error) {
         console.error("Error loading restaurant details:", error);
@@ -98,15 +99,9 @@ const RestaurantDetails = () => {
 
         <RestaurantHeader restaurant={restaurant} />
         
-        <ReviewSummary 
-          categorySummary={categorySummary} 
-          isGeneratingMainSummary={isGeneratingMainSummary} 
-        />
-        
         {restaurant?.reviews && restaurant.reviews.length > 0 && (
           <ReviewList 
             sortedReviews={sortedReviews}
-            reviewSummaries={reviewSummaries}
           />
         )}
       </main>
