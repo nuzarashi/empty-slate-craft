@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useContext } from 'react';
-import { LanguageContext } from './LanguageSelector';
+import { LanguageContext } from '../contexts/LanguageContext';
 import type { FilterOptions, MealType, SortOption } from '../types';
 
 interface FilterBarProps {

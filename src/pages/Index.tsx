@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MapPin, Filter, AlertCircle, WifiOff, Loader2 } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
 import type { FilterOptions } from '@/types';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { LanguageContext } from '@/contexts/LanguageContext';
 import { DiningPreferences } from '@/components/PreferencesMenu';
 
 const Index = () => {

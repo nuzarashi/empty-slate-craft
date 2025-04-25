@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -6,7 +7,7 @@ import Header from '@/components/Header';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import useGoogleMaps from '@/hooks/useGoogleMaps';
 import type { Restaurant } from '@/types';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { LanguageContext } from '@/contexts/LanguageContext';
 import PhotoCarousel from '@/components/restaurant-details/PhotoCarousel';
 import RestaurantHeader from '@/components/restaurant-details/RestaurantHeader';
 import ReviewSummary from '@/components/restaurant-details/ReviewSummary';

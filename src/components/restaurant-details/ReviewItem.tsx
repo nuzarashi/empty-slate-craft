@@ -1,7 +1,7 @@
 
 import React, { useState, useContext } from 'react';
 import { Star, ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react';
-import { LanguageContext } from '../../contexts/LanguageContext';
+import { LanguageContext } from '@/contexts/LanguageContext';
 import type { Review } from '@/types';
 import { isJapaneseText } from '@/utils/review/languageUtils';
 

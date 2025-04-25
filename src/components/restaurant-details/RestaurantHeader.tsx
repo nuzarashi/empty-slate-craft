@@ -3,7 +3,7 @@ import React from 'react';
 import { MapPin, Star, Clock, ExternalLink } from 'lucide-react';
 import { formatDistance, formatDuration } from '@/utils/formatters';
 import { useContext } from 'react';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { LanguageContext } from '@/contexts/LanguageContext';
 import type { Restaurant } from '@/types';
 
 interface RestaurantHeaderProps {

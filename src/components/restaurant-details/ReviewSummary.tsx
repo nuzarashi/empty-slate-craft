@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Utensils, Music, User } from 'lucide-react';
 import { useContext } from 'react';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { LanguageContext } from '@/contexts/LanguageContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import type { CategorySummary } from '@/utils/review/types';
 

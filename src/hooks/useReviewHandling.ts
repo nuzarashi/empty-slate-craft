@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useContext } from 'react';
 import { generateReviewSummary } from '@/utils/review';
 import { createLocalSummary } from '@/utils/review/localSummary';
 import type { Review, Restaurant } from '@/types';
 import type { CategorySummary } from '@/utils/review/types';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { LanguageContext } from '@/contexts/LanguageContext';
 
 interface UseReviewHandlingProps {
   restaurant: Restaurant | null;
@@ -17,7 +16,6 @@ export const useReviewHandling = ({ restaurant }: UseReviewHandlingProps) => {
   const [categorySummary, setCategorySummary] = useState<CategorySummary | null>(null);
   const { language } = useContext(LanguageContext);
 
-  // Generate a summary for all reviews
   const generateAllReviewsSummary = async (reviews: Review[]) => {
     if (!reviews || reviews.length === 0) return;
     
@@ -38,7 +36,6 @@ export const useReviewHandling = ({ restaurant }: UseReviewHandlingProps) => {
     }
   };
 
-  // Generate individual review summary
   const getReviewSummary = async (reviewIndex: number, reviewText: string) => {
     if (reviewSummaries[reviewIndex] || !reviewText) return;
     
@@ -60,14 +57,12 @@ export const useReviewHandling = ({ restaurant }: UseReviewHandlingProps) => {
     }
   };
 
-  // Update reviews when restaurant data changes
   useEffect(() => {
     if (restaurant?.reviews) {
       setSortedReviews(restaurant.reviews.slice(0, 10));
     }
   }, [restaurant?.reviews]);
 
-  // Generate review summaries for reviews
   useEffect(() => {
     if (sortedReviews.length > 0) {
       console.log("Generating summaries for", sortedReviews.length, "reviews in language:", language);
@@ -79,7 +74,6 @@ export const useReviewHandling = ({ restaurant }: UseReviewHandlingProps) => {
     }
   }, [sortedReviews, language]);
 
-  // Regenerate summary when language changes
   useEffect(() => {
     if (restaurant?.reviews && restaurant.reviews.length > 0) {
       console.log("Language changed, regenerating summaries in:", language);
