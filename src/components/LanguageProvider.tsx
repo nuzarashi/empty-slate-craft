@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner'; 
-import { LanguageContext, Language, translations } from './LanguageSelector';
+import { LanguageContext, Language, translations } from '../contexts/LanguageContext';
 
 interface LanguageProviderProps {
   children: React.ReactNode;

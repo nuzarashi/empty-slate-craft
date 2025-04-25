@@ -2,10 +2,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Map } from 'lucide-react';
-import LanguageSelector, { Language } from './LanguageSelector';
+import LanguageSelector, { LanguageSelectorProps } from './LanguageSelector';
 import PreferencesMenu, { DiningPreferences } from './PreferencesMenu';
 import { useContext } from 'react';
-import { LanguageContext } from './LanguageSelector';
+import { LanguageContext } from '../contexts/LanguageContext';
 
 interface HeaderProps {
   locationName?: string;
@@ -20,7 +20,7 @@ const defaultPreferences: DiningPreferences = {
 const Header: React.FC<HeaderProps> = ({ locationName }) => {
   const { t } = useContext(LanguageContext);
   
-  const handleLanguageChange = (language: Language) => {
+  const handleLanguageChange = (language: import('../contexts/LanguageContext').Language) => {
     console.log('Language changed to:', language);
     // TODO: Implement language change functionality
   };

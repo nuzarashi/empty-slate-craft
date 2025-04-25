@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useContext } from 'react';
-import { LanguageContext } from '@/components/LanguageSelector';
+import { LanguageContext } from '../../contexts/LanguageContext';
 import ReviewItem from './ReviewItem';
 import type { Review } from '@/types';
 
